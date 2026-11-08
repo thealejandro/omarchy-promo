@@ -10,8 +10,8 @@ Solo usa capturas reales: nada se graba de la pantalla al renderizar.
 
 | Archivo | Formato | Duración |
 | --- | --- | --- |
-| `out/omarchy-promo.mp4` | 1920×1080, 60 fps, H.264 yuv420p CRF 18, faststart, AAC | ~90 s |
-| `out/omarchy-promo-vertical.mp4` | 1080×1920, 60 fps, mismo códec | ~44 s |
+| `out/omarchy-promo.mp4` | 1920×1080, 60 fps, H.264 yuv420p CRF 18, faststart, AAC | ~88,6 s |
+| `out/omarchy-promo-vertical.mp4` | 1080×1920, 60 fps, mismo códec | ~45,1 s |
 | `out/poster.jpg` | 1920×1080 | — |
 
 ## Uso
@@ -39,14 +39,14 @@ src/
   PromoVertical.tsx   lista de escenas del vertical (mismas escenas, maquetación vertical)
   lib.tsx             datos de temas, fuentes, titulares palabra a palabra, Monitor, ZoomImg…
   clips.ts            clips en vivo opcionales
-  music.ts            pista de audio opcional
+  music.ts            pistas de audio (horizontal y vertical)
   scenes/             Intro, OnceTemas, Families (carrusel + Obsidiana), Details
                       (esquinas, paleta, barra, claro/oscuro), Island, Close
 public/
   shots/ extras/ backgrounds/ island/   material real (npm run assets)
   fonts/              Inter y JetBrains Mono (OFL), empaquetadas: render sin red
   marca/logotipo.svg  logotipo de thealejandro (copia de ~/Streaming/marca; no se modifica)
-  audio/pad.m4a       pad sintetizado (scripts/make-pad.sh)
+  audio/              música editada (limit70-h.m4a, limit70-v.m4a; scripts/make-music.sh)
   clips/              aquí van los clips grabados en vivo
 ```
 
@@ -80,14 +80,31 @@ El clip se muestra dentro del mismo marco de monitor, sin audio.
 
 ## Música
 
-Por defecto suena `public/audio/pad.m4a`: un pad ambiental generado con
-`scripts/make-pad.sh` (síntesis aditiva en Python/numpy + eco y `loudnorm` de ffmpeg), sin
-muestras ni derechos de terceros. Para cambiarlo, edita `src/music.ts`:
+Suena «Limit 70», de Kevin MacLeod (electrónica tranquila a 102,65 BPM, piano eléctrico y
+sintetizadores), editada para encajar con el montaje:
 
-- otra pista libre (CC0 o CC-BY, citando al autor): cópiala a `public/audio/` y cambia `src`;
-- sin sonido: `MUSIC = null`.
+> «Limit 70» Kevin MacLeod (incompetech.com)
+> Licensed under Creative Commons: By Attribution 4.0 License
+> http://creativecommons.org/licenses/by/4.0/
+>
+> Pista: <https://incompetech.filmmusic.io/song/5710-limit-70>
 
-El volumen entra en 1 s y sale en los últimos 2,5 s automáticamente.
+Los archivos `public/audio/limit70-h.m4a` (88,6 s) y `limit70-v.m4a` (45,1 s) los genera
+`scripts/make-music.sh` a partir del original: cortes en compás, fundidos de entrada y salida, un
+ajuste de tempo de ~1 % para que el golpe, la subida y el final queden en las escenas «Once temas»,
+«Y una isla.» y el cierre, y normalización a −16 LUFS. El original no se versiona:
+
+```bash
+curl -o "Limit 70.mp3" "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Limit%2070.mp3"
+scripts/make-music.sh "Limit 70.mp3"
+```
+
+Los fundidos y el nivel van dentro del audio, así que `src/music.ts` usa volumen 1. Para cambiar
+la pista, edita `src/music.ts` (y los compases de `scripts/make-music.sh`); sin sonido:
+`MUSIC_HORIZONTAL = null` y `MUSIC_VERTICAL = null`. Si cambias las duraciones de las escenas,
+los cortes dejan de caer en el compás: mantén la rejilla de 102,65 BPM.
+
+**Si publicas el vídeo, incluye el crédito de arriba en la descripción.**
 
 ## Notas
 
@@ -104,7 +121,11 @@ El volumen entra en 1 s y sale en los últimos 2,5 s automáticamente.
 - Código y escenas: [MIT](LICENSE).
 - Fuentes: Inter y JetBrains Mono, bajo SIL Open Font License 1.1
   ([Inter-OFL.txt](public/fonts/Inter-OFL.txt), [JetBrainsMono-OFL.txt](public/fonts/JetBrainsMono-OFL.txt)).
-- Música: `public/audio/pad.m4a` es propia (sintetizada con `scripts/make-pad.sh`), MIT como el código.
+- Música: «Limit 70» de Kevin MacLeod ([incompetech.com](https://incompetech.com)), bajo
+  [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) (CC BY 4.0).
+  Crédito: «Limit 70» Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By
+  Attribution 4.0 License, <http://creativecommons.org/licenses/by/4.0/>. Los `.m4a` de
+  `public/audio/` son una versión editada (cortes, fundidos, tempo ±1 %, volumen); **no** entran en la MIT.
 - Remotion se instala como dependencia y tiene [su propia licencia](https://www.remotion.dev/license)
   (gratis para personas y equipos pequeños).
 - El logotipo (`public/marca/`) y el nombre «thealejandro» son marca del autor: **no** entran en la MIT.
