@@ -1,0 +1,26 @@
+{
+  "name": "omarchy-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Video promocional de los temas de Omarchy de thealejandro y omarchy-island (Remotion)",
+  "scripts": {
+    "studio": "remotion studio",
+    "assets": "bash scripts/prepare-assets.sh",
+    "render": "remotion render Promo out/omarchy-promo.raw.mp4 && bash scripts/finish.sh out/omarchy-promo.raw.mp4 out/omarchy-promo.mp4",
+    "render:vertical": "remotion render PromoVertical out/omarchy-promo-vertical.raw.mp4 && bash scripts/finish.sh out/omarchy-promo-vertical.raw.mp4 out/omarchy-promo-vertical.mp4",
+    "poster": "remotion still Poster out/poster.png && ffmpeg -loglevel error -y -i out/poster.png -q:v 2 out/poster.jpg && rm out/poster.png",
+    "build": "npm run render && npm run render:vertical && npm run poster",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.541",
+    "@remotion/google-fonts": "4.0.541",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.541"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}
