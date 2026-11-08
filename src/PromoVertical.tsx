@@ -21,7 +21,7 @@ export const verticalScenes = () => {
       ? {id: 'clip-isla', dur: s(CLIPS.islandOpen.duration), render: (d: number) => <LiveClip dur={d} clip={CLIPS.islandOpen!} />}
       : {id: 'isla-abierta', dur: s(6.0), render: (d: number) => <IslandOpen dur={d} />},
     {id: 'isla-colores', dur: s(3.2), render: (d: number) => <IslandColors dur={d} />},
-    {id: 'cierre', dur: s(7.4), render: (d: number) => <Close dur={d} />},
+    {id: 'cierre', dur: s(8.4), render: (d: number) => <Close dur={d} />},
   ];
   return list;
 };

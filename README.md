@@ -45,6 +45,7 @@ src/
 public/
   shots/ extras/ backgrounds/ island/   material real (npm run assets)
   fonts/              Inter y JetBrains Mono (OFL), empaquetadas: render sin red
+  marca/logotipo.svg  logotipo de thealejandro (copia de ~/Streaming/marca; no se modifica)
   audio/pad.m4a       pad sintetizado (scripts/make-pad.sh)
   clips/              aquí van los clips grabados en vivo
 ```
@@ -54,7 +55,8 @@ reordena por familia) → «Inspirados en macOS.» → «Inspirados en Windows.�
 → esquinas y bordes con degradado (dolly) → paleta (los colores salen de la captura y
 cambian de tema) → barra opaca / cristal / transparente → claro u oscuro (barrido) →
 «Y una isla.» (vistazo, se abre desde el reloj, páginas, agenda, hora mundial, clima,
-cualquier borde, colores del tema) → comando de instalación y thealejandro.dev/omarchy.
+cualquier borde, colores del tema) → comando de instalación, thealejandro.dev/omarchy y firma
+con el logotipo («Hecho por thealejandro»).
 
 ## Clips en vivo
 
@@ -93,4 +95,6 @@ El volumen entra en 1 s y sale en los últimos 2,5 s automáticamente.
   `portfolio/src/data/omarchy-themes.json` (copiado a `src/themes.json`).
 - «Contraste AA»: todos los colores de cada paleta tienen ≥ 4,5:1 sobre su fondo (comprobado).
 - La isla aún no muestra notificaciones: el vídeo no las menciona.
+- Logotipo: según `~/Streaming/diseno/MARCA.md` §0 (sin espejar, sin brillos, sombras ni
+  degradados; solo fundido y escala al entrar).
 - Sin relación con Apple ni Microsoft.

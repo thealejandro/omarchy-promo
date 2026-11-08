@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Img, staticFile, useCurrentFrame} from 'remotion';
 import {C, EASE, FONT, MONO, Words, ramp, useIsVertical, useSceneFade, useSpr} from '../lib';
 import {Aurora, GRAD} from './Intro';
 
@@ -20,6 +20,11 @@ export const Close: React.FC<{dur: number}> = ({dur}) => {
   const caretOn = Math.floor(frame / 30) % 2 === 0 || typed < full.length;
   const T_URL = TYPE0 + Math.ceil(full.length / cps) + 40;
   const url = ramp(frame, T_URL, T_URL + 40, EASE);
+  // Firma: logotipo (sin efectos: solo fundido y escala sutil) y «Hecho por thealejandro».
+  const T_SIG = T_URL + 70;
+  const sig = useSpr(T_SIG, 50);
+  const sigText = ramp(frame, T_SIG + 20, T_SIG + 50, EASE);
+  const lift = V ? 0 : sig * 60;
 
   // En horizontal todo en una línea; en vertical, dos.
   const lines = V
@@ -43,7 +48,7 @@ export const Close: React.FC<{dur: number}> = ({dur}) => {
         <div
           style={{
             opacity: box,
-            transform: `translateY(${(1 - box) * 30 - url * (V ? 170 : 130)}px) scale(${0.97 + 0.03 * box})`,
+            transform: `translateY(${(1 - box) * 30 - url * (V ? 170 : 130) - lift}px) scale(${0.97 + 0.03 * box})`,
             filter: box < 1 ? `blur(${(1 - box) * 10}px)` : undefined,
             display: 'flex',
             flexDirection: 'column',
@@ -89,7 +94,7 @@ export const Close: React.FC<{dur: number}> = ({dur}) => {
             textAlign: 'center',
             fontFamily: FONT,
             opacity: url,
-            transform: `translateY(${(1 - url) * 30}px)`,
+            transform: `translateY(${(1 - url) * 30 - lift}px)`,
             filter: url < 1 ? `blur(${(1 - url) * 10}px)` : undefined,
           }}
         >
@@ -114,6 +119,27 @@ export const Close: React.FC<{dur: number}> = ({dur}) => {
           </div>
         </div>
       </AbsoluteFill>
+
+      <div
+        style={{
+          position: 'absolute',
+          top: V ? 1350 : 810,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: V ? 26 : 20,
+        }}
+      >
+        <Img
+          src={staticFile('marca/logotipo.svg')}
+          style={{width: V ? 560 : 400, height: 'auto', opacity: sig, transform: `scale(${0.96 + 0.04 * sig})`}}
+        />
+        <div style={{fontFamily: FONT, fontSize: V ? 30 : 24, color: C.dim, opacity: sigText, letterSpacing: '-0.005em'}}>
+          Hecho por thealejandro
+        </div>
+      </div>
 
       <div
         style={{

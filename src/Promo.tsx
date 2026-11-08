@@ -41,7 +41,7 @@ export const horizontalScenes = (): Scene[] => {
     const c = CLIPS.themeSwitch;
     list.push({id: 'clip-tema', dur: s(c.duration), render: (d) => <LiveClip dur={d} clip={c} />});
   }
-  list.push({id: 'cierre', dur: s(10.5), render: (d) => <Close dur={d} />});
+  list.push({id: 'cierre', dur: s(9.2), render: (d) => <Close dur={d} />});
   return list;
 };
 

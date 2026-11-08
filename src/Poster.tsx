@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, Img} from 'remotion';
+import {AbsoluteFill, Img, staticFile} from 'remotion';
 import {C, FONT, Monitor, Words, monitorHeight, shot} from './lib';
 import {Aurora, GRAD} from './scenes/Intro';
 
@@ -58,6 +58,10 @@ export const Poster: React.FC = () => {
       >
         thealejandro.dev/omarchy
       </div>
+      <Img
+        src={staticFile('marca/logotipo.svg')}
+        style={{position: 'absolute', right: 56, bottom: 62, width: 210, height: 'auto', zIndex: 3}}
+      />
     </AbsoluteFill>
   );
 };
