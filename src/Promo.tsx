@@ -61,7 +61,7 @@ export const Timeline: React.FC<{scenes: Scene[]; music?: Music | null}> = ({sce
           </Sequence>
         );
       })}
-      {/* Fundidos y nivel (-16 LUFS) ya van horneados en el audio: ver scripts/make-music.sh */}
+      {/* Música, efectos y nivel (-16 LUFS) ya van mezclados en el audio: ver scripts/make-audio.py */}
       {music ? <Audio src={staticFile(music.src)} volume={music.volume} /> : null}
     </AbsoluteFill>
   );
