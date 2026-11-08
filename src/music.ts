@@ -1,5 +1,7 @@
-// Pista de audio opcional. Ver README.md, sección «Música».
-// - 'audio/pad.m4a' es un pad ambiental sintetizado con ffmpeg (scripts/make-pad.sh): libre de derechos.
-// - Para usar una pista libre (CC0/CC-BY con atribución), cópiala a public/audio/ y cambia `src`.
-// - Pon `MUSIC = null` para un vídeo sin sonido.
-export const MUSIC: {src: string; volume: number} | null = {src: 'audio/pad.m4a', volume: 0.8};
+// Pista de audio. Ver README.md, sección «Música».
+// «Limit 70» de Kevin MacLeod (incompetech.com), CC BY 4.0, editada con scripts/make-music.sh:
+// cortes en compás (102,65 BPM), fundidos y -16 LUFS ya incluidos en los .m4a.
+// Pon `MUSIC_HORIZONTAL = null` / `MUSIC_VERTICAL = null` para un vídeo sin sonido.
+export type Music = {src: string; volume: number};
+export const MUSIC_HORIZONTAL: Music | null = {src: 'audio/limit70-h.m4a', volume: 1};
+export const MUSIC_VERTICAL: Music | null = {src: 'audio/limit70-v.m4a', volume: 1};
