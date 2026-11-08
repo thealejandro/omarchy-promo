@@ -46,7 +46,7 @@ public/
   shots/ extras/ backgrounds/ island/   material real (npm run assets)
   fonts/              Inter y JetBrains Mono (OFL), empaquetadas: render sin red
   marca/logotipo.svg  logotipo de thealejandro (copia de ~/Streaming/marca; no se modifica)
-  audio/              música editada (limit70-h.m4a, limit70-v.m4a; scripts/make-music.sh)
+  audio/              sonido final: música + efectos (mix-h.m4a, mix-v.m4a; scripts/make-audio.py)
   clips/              aquí van los clips grabados en vivo
 ```
 
@@ -78,10 +78,12 @@ La composición tiene dos huecos preparados para clips grabados (no incluidos):
 
 El clip se muestra dentro del mismo marco de monitor, sin audio.
 
-## Música
+## Sonido
+
+### Música
 
 Suena «Limit 70», de Kevin MacLeod (electrónica tranquila a 102,65 BPM, piano eléctrico y
-sintetizadores), editada para encajar con el montaje:
+sintetizadores), arreglada para el montaje:
 
 > «Limit 70» Kevin MacLeod (incompetech.com)
 > Licensed under Creative Commons: By Attribution 4.0 License
@@ -89,22 +91,55 @@ sintetizadores), editada para encajar con el montaje:
 >
 > Pista: <https://incompetech.filmmusic.io/song/5710-limit-70>
 
-Los archivos `public/audio/limit70-h.m4a` (88,6 s) y `limit70-v.m4a` (45,1 s) los genera
-`scripts/make-music.sh` a partir del original: cortes en compás, fundidos de entrada y salida, un
-ajuste de tempo de ~1 % para que el golpe, la subida y el final queden en las escenas «Once temas»,
-«Y una isla.» y el cierre, y normalización a −16 LUFS. El original no se versiona:
+El arreglo es minimalista y respira con la imagen; no suena igual todo el rato:
+
+- **Intro**: solo la capa suave (piano eléctrico), casi en silencio, con un paso bajo que se va
+  abriendo. Se corta en seco un pulso antes de «Once temas.» y vuelve con el tema completo.
+- **Carruseles**: tema completo; en «Inspirados en Windows» el filtro se va cerrando.
+- **«Y uno propio.»**: se queda en las teclas del puente (−7 dB, filtradas); en las esquinas
+  vuelve la percusión ligera y el filtro se abre hasta que entra el tema en la paleta.
+- **Claro u oscuro**: agudos un poco más brillantes en el claro; al pasar a oscuro, paso bajo.
+- **Silencio** de dos pulsos antes de «Y una isla.», con un soplido inverso casi inaudible, y
+  regreso con golpe. Al abrirse la isla la música se hunde (paso bajo a 850 Hz) y se reabre.
+- **Cierre**: otra vez solo teclas; al aparecer la URL entra un remate de dos pulsos que acaba en
+  seco sobre la firma, con un acorde final de Fa# que se apaga en la sala.
+
+Cada sección se estira con rubberband (±4 % como mucho) para que los golpes caigan en su
+fotograma; los cambios armónicos respetan la progresión del original (4 compases en Fa# y 4 en Re#m).
+
+### Efectos
+
+Todos son **síntesis propia** (`scripts/make-audio.py`, solo numpy): no hay muestras de terceros
+ni voces sintéticas.
+
+| Efecto | Cómo está hecho | Dónde |
+| --- | --- | --- |
+| Tick de interfaz | ruido filtrado de 2 ms + dos modos resonantes amortiguados + «toc» grave, saturación suave, sala corta; tono y nivel varían en cada uno | cambios de tema (montaje, carruseles, paleta, barra, claro/oscuro), tarjetas, pestañas de la isla, URL |
+| Soplido | ruido rosa estéreo con paso banda que sube y baja y paneo en movimiento | entrada del monitor, rejilla, reordenado, carruseles, «Y uno propio», zoom |
+| Golpe grave | barrido 68→38 Hz con envolvente real, transitorio de ruido grave, saturación asimétrica | «Once temas.», «Y una isla.», firma |
+| Tono de la isla | campana suave (parciales 1, 2, 3, 4,07, 5,4), Fa#5 + Do#6, sala larga | se asoma y se abre la isla, firma |
+| Soplido inverso | ruido con paso alto ascendente que acaba en seco | silencio antes de «Y una isla.» |
+
+Los efectos van siempre por debajo de la música (ticks y soplidos entre −20 y −40 dB por debajo
+en RMS; los golpes graves casi solo aportan sub). La tabla completa de eventos (fotograma, tipo y
+motivo) está en `cues()` dentro del script; si cambias duraciones o tiempos internos de escena,
+actualiza `SCENES_*` y `cues()`.
+
+### Regenerar el audio
+
+Requisitos: `python3` con numpy, `ffmpeg` y `rubberband`. El MP3 original no se versiona:
 
 ```bash
 curl -o "Limit 70.mp3" "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Limit%2070.mp3"
-scripts/make-music.sh "Limit 70.mp3"
+python3 scripts/make-audio.py "Limit 70.mp3"                 # public/audio/mix-h.m4a y mix-v.m4a
+python3 scripts/make-audio.py "Limit 70.mp3" --stems /tmp/st  # además: música, efectos y eventos por separado
 ```
 
-Los fundidos y el nivel van dentro del audio, así que `src/music.ts` usa volumen 1. Para cambiar
-la pista, edita `src/music.ts` (y los compases de `scripts/make-music.sh`); sin sonido:
-`MUSIC_HORIZONTAL = null` y `MUSIC_VERTICAL = null`. Si cambias las duraciones de las escenas,
-los cortes dejan de caer en el compás: mantén la rejilla de 102,65 BPM.
+El resultado es determinista. La mezcla sale a −16 LUFS integrados con pico real ≤ −1 dBTP
+(limitador con sobremuestreo ×4) y ya incluye fundidos y nivel, así que `src/music.ts` usa
+volumen 1. Sin sonido: `MUSIC_HORIZONTAL = null` y `MUSIC_VERTICAL = null`.
 
-**Si publicas el vídeo, incluye el crédito de arriba en la descripción.**
+**Si publicas el vídeo, incluye el crédito de la música en la descripción.**
 
 ## Notas
 
@@ -125,7 +160,9 @@ los cortes dejan de caer en el compás: mantén la rejilla de 102,65 BPM.
   [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) (CC BY 4.0).
   Crédito: «Limit 70» Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By
   Attribution 4.0 License, <http://creativecommons.org/licenses/by/4.0/>. Los `.m4a` de
-  `public/audio/` son una versión editada (cortes, fundidos, tempo ±1 %, volumen); **no** entran en la MIT.
+  `public/audio/` contienen una versión arreglada (cortes, silencios, filtros, tempo, volumen) mezclada
+  con los efectos; la música **no** entra en la MIT.
+- Efectos de sonido: síntesis propia (`scripts/make-audio.py`), bajo la MIT como el resto del código.
 - Remotion se instala como dependencia y tiene [su propia licencia](https://www.remotion.dev/license)
   (gratis para personas y equipos pequeños).
 - El logotipo (`public/marca/`) y el nombre «thealejandro» son marca del autor: **no** entran en la MIT.
