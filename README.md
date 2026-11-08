@@ -98,3 +98,16 @@ El volumen entra en 1 s y sale en los últimos 2,5 s automáticamente.
 - Logotipo: según `~/Streaming/diseno/MARCA.md` §0 (sin espejar, sin brillos, sombras ni
   degradados; solo fundido y escala al entrar).
 - Sin relación con Apple ni Microsoft.
+
+## Licencias
+
+- Código y escenas: [MIT](LICENSE).
+- Fuentes: Inter y JetBrains Mono, bajo SIL Open Font License 1.1
+  ([Inter-OFL.txt](public/fonts/Inter-OFL.txt), [JetBrainsMono-OFL.txt](public/fonts/JetBrainsMono-OFL.txt)).
+- Música: `public/audio/pad.m4a` es propia (sintetizada con `scripts/make-pad.sh`), MIT como el código.
+- Remotion se instala como dependencia y tiene [su propia licencia](https://www.remotion.dev/license)
+  (gratis para personas y equipos pequeños).
+- El logotipo (`public/marca/`) y el nombre «thealejandro» son marca del autor: **no** entran en la MIT.
+  Si reutilizas el proyecto, cámbialos por los tuyos.
+- Fondos y capturas de los temas: de [omarchy-themes](https://github.com/thealejandro/omarchy-themes), MIT.
+- Omarchy es de sus autores; este vídeo no es oficial.
