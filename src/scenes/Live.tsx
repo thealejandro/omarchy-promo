@@ -192,9 +192,9 @@ export const LiveIsland: React.FC<{dur: number; clip: Clip}> = ({clip}) => {
     <AbsoluteFill style={{background: C.bg}}>
       {V ? (
         <div style={{position: 'absolute', top: 280, left: 0, right: 0, textAlign: 'center'}}>
-          <Words text={t.island} start={0} size={104} weight={650} gradient={GRAD} />
-          <div style={{fontFamily: FONT, fontSize: 46, fontWeight: 500, color: C.text, marginTop: 4, opacity: ramp(frame, 14, 30)}}>
-            {t.open}
+          <Words text={t.islandV} start={0} size={96} weight={650} gradient={GRAD} />
+          <div style={{fontFamily: FONT, fontSize: 44, fontWeight: 500, color: C.text, marginTop: 10, opacity: ramp(frame, 14, 30)}}>
+            {t.openV}
           </div>
         </div>
       ) : null}

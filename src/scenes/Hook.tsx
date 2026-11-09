@@ -63,10 +63,15 @@ export const Hook: React.FC<{dur: number}> = () => {
           flexDirection: 'column',
         }}
       >
-        <div style={{display: 'flex', flexDirection: V ? 'column' : 'row', alignItems: 'center'}}>
-          <Words text={t.hookA} start={2} stagger={4} size={V ? 132 : 176} weight={650} />
-          <Words text={t.hookB} start={10} stagger={5} size={V ? 132 : 176} weight={300} gradient={GRAD} />
-        </div>
+        {V ? (
+          // Reel: quién lo hizo, para qué es y que es gratis, legible desde el primer segundo.
+          <Words text={t.hookV} start={-24} stagger={3} size={112} weight={650} />
+        ) : (
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <Words text={t.hookA} start={2} stagger={4} size={176} weight={650} />
+            <Words text={t.hookB} start={10} stagger={5} size={176} weight={300} gradient={GRAD} />
+          </div>
+        )}
         <div
           style={{
             marginTop: V ? 34 : 26,
@@ -75,11 +80,13 @@ export const Hook: React.FC<{dur: number}> = () => {
             fontWeight: 500,
             color: C.text,
             letterSpacing: '-0.01em',
-            opacity: ramp(frame, 24, 40, EASE),
-            transform: `translateY(${(1 - ramp(frame, 24, 40, EASE)) * 16}px)`,
+            opacity: V ? ramp(frame, 10, 22, EASE) : ramp(frame, 24, 40, EASE),
+            transform: `translateY(${(1 - (V ? ramp(frame, 10, 22, EASE) : ramp(frame, 24, 40, EASE))) * 16}px)`,
+            textAlign: 'center',
+            maxWidth: V ? 950 : undefined,
           }}
         >
-          {t.hookSub}
+          {V ? t.hookSubV : t.hookSub}
         </div>
       </AbsoluteFill>
       {/* Nombre del tema que se ve: dentro de la zona segura en vertical. */}
