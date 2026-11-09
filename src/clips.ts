@@ -4,6 +4,8 @@
 // `marks` son los segundos del clip en los que pasa algo (el cambio de tema, el clic en el reloj):
 // las escenas los ponen justo en un pulso de la música. Con `null` las escenas usan capturas fijas.
 
+import type {Lang} from './i18n';
+
 export type Clip = {
   /** Ruta dentro de public/, p. ej. 'clips/island-open.mp4'. */
   src: string;
@@ -14,13 +16,17 @@ export type Clip = {
 };
 
 export const CLIPS: {
-  /** Cursor al reloj, clic y se abre la isla (Inicio → Calendario). marks: [clic]. */
-  islandOpen: Clip | null;
+  /** Cursor al reloj, clic y se abre la isla (Inicio → Calendario), en el idioma del vídeo. marks: [clic]. */
+  islandOpen: Record<Lang, Clip> | null;
   /** Cupertino → Tahoe → Aero Night → Obsidiana → Fluent Light. marks: un cambio cada uno. */
   themeSwitch: Clip | null;
 } = {
-  islandOpen: {src: 'clips/island-open.mp4', duration: 5.8, marks: [3.02]},
-  themeSwitch: {src: 'clips/theme-switch.mp4', duration: 18.85, marks: [3.05, 6.78, 10.75, 14.48]},
+  // marks medidos en el vídeo (primer fotograma que cambia), no en el registro: el grabador va ~0,5 s por detrás.
+  islandOpen: {
+    es: {src: 'clips/island-open-es.mp4', duration: 6.9, marks: [3.05]},
+    en: {src: 'clips/island-open-en.mp4', duration: 6.9, marks: [3.07]},
+  },
+  themeSwitch: {src: 'clips/theme-switch.mp4', duration: 18.85, marks: [2.98, 6.8, 10.65, 14.48]},
 };
 
 /** Temas del clip de cambio de tema, en orden (el primero es el de partida). */

@@ -77,15 +77,19 @@ cierre con «Enlace en el perfil». Todo el texto queda en la zona segura de Ree
 
 ## Clips en vivo
 
-`scripts/capture-clips.sh` graba los dos clips en el escritorio 9 sin datos personales
+`scripts/capture-clips.sh` graba los clips en el escritorio 9 sin datos personales
 (Silencio activo, sin la página Mundo ni la ubicación del clima) y restaura el estado al
 terminar. Deja `public/clips/<clip>.mp4` y un `.json` con el segundo de cada acción según el
-registro de la grabación.
+registro de la grabación. En las ventanas de la demo se apagan los avisos de recarga de
+Ghostty, lazy.nvim y aether.nvim (opciones de línea de órdenes, sin tocar la configuración).
+La isla se graba en español y en inglés (cada vídeo usa la de su idioma) y, de paso, se
+fotografía abierta en Inicio con los once temas: `public/island-themes/<es|en>/<tema>.webp`,
+que usa «Toma los colores de tu tema».
 
 | Clip | Uso | Marcas (`src/clips.ts`) |
 | --- | --- | --- |
 | `theme-switch.mp4` | «Cambia de tema en vivo.» | segundos en los que el cambio ya se ve |
-| `island-open.mp4` | «Se abre desde el reloj.» (recortado a 5,8 s) | clic en el reloj |
+| `island-open-<es\|en>.mp4` | «Se abre desde el reloj.» | clic en el reloj |
 
 Las marcas de `src/clips.ts` están medidas sobre el vídeo (no sobre el registro) y deciden en
 qué fotograma empieza cada tramo: así el cambio de tema y el clic caen justo en un pulso. Si

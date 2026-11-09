@@ -1,6 +1,6 @@
 import React from 'react';
 import {CLIPS} from './clips';
-import {LangProvider, useT, type Lang} from './i18n';
+import {LangProvider, useLang, useT, type Lang} from './i18n';
 import {MACOS, WINDOWS} from './lib';
 import {MUSIC_HORIZONTAL, MUSIC_VERTICAL} from './music';
 import {Timeline, type SceneRender, type Version} from './Timeline';
@@ -18,7 +18,8 @@ export type PromoProps = {lang: Lang};
 const useScenes = (v: Version): Record<string, SceneRender> => {
   const t = useT();
   const V = v === 'v';
-  const island = CLIPS.islandOpen;
+  const lang = useLang();
+  const island = CLIPS.islandOpen?.[lang] ?? null; // la isla habla el idioma del vídeo
   return {
     hook: (d) => <Hook dur={d} />,
     once: (d) => <OnceTemas dur={d} />,

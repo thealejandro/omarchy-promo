@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {useT} from '../i18n';
+import {useLang, useT} from '../i18n';
 import {
   ALL,
   B,
@@ -409,6 +409,24 @@ export const IslandEdges: React.FC<{dur: number; slug?: string}> = ({dur, slug =
 // ---------------------------------------------------------------------------
 // Toma los colores del tema
 // ---------------------------------------------------------------------------
+// Capturas actuales de la isla en Inicio (scripts/capture-clips.sh): 800x560, recortadas de 1920x1080
+// en x 560. La tarjeta ocupa x 140–660 e y 25–250; se deja algo de barra y de escritorio alrededor.
+const SHOT = {x: 110, y: 0, w: 580, h: 280, srcW: 800, srcH: 560};
+const shotH = (w: number) => Math.round((w * SHOT.h) / SHOT.w);
+
+const IslandShot: React.FC<{slug: string; w: number}> = ({slug, w}) => {
+  const lang = useLang();
+  const k = w / SHOT.w;
+  return (
+    <div style={{position: 'relative', width: w, height: shotH(w), overflow: 'hidden', borderRadius: 20}}>
+      <Img
+        src={staticFile(`island-themes/${lang}/${slug}.webp`)}
+        style={{position: 'absolute', left: -SHOT.x * k, top: -SHOT.y * k, width: SHOT.srcW * k, height: SHOT.srcH * k}}
+      />
+    </div>
+  );
+};
+
 const RIBBON = ['cupertino', 'big-sur', 'tahoe', 'fluent', 'obsidiana', 'aero', 'ventura', 'graphite', 'fluent-light', 'aero-night', 'cupertino-light'];
 
 export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
@@ -417,7 +435,7 @@ export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
   const {width: W, height: H} = useVideoConfig();
   const V = useIsVertical();
   const cw = V ? 720 : 620;
-  const chh = islandCropH(cw);
+  const chh = shotH(cw);
   const gap = V ? 50 : 46;
   const step = cw + gap;
   const cy = V ? H * 0.45 : 600; // en vertical, el nombre del tema queda por encima de y 1248 (zona segura)
@@ -450,7 +468,7 @@ export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
             }}
           >
             <div style={{borderRadius: 20, boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.12)'}}>
-              <IslandCrop slug={slug} w={cw} />
+              <IslandShot slug={slug} w={cw} />
             </div>
             <div
               style={{
