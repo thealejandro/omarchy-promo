@@ -1,8 +1,9 @@
 import React from 'react';
-import {AbsoluteFill, Img, OffthreadVideo, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import type {Clip} from '../clips';
+import {AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {useT} from '../i18n';
 import {
   ALL,
+  B,
   Backdrop,
   C,
   EASE,
@@ -17,7 +18,6 @@ import {
   ramp,
   theme,
   useIsVertical,
-  useSceneFade,
   useSpr,
   zoomAt,
 } from '../lib';
@@ -77,22 +77,22 @@ export const IslandIntro: React.FC<{dur: number; slug?: string}> = ({dur, slug =
   const frame = useCurrentFrame();
   const {height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 10, 20);
-  const T_MON = 96;
-  const mon = useSpr(T_MON, 60);
+  const t = useT();
+  const T_MON = B + 12; // el titular golpea en el pulso 0 y el monitor sube después
+  const mon = useSpr(T_MON, 40);
   const mw = V ? 1000 : 1360;
   const mh = monitorHeight(mw);
   const top = V ? H * 0.5 - mh / 2 - 40 : 78;
   const keys = [
     {f: T_MON, s: 1, x: 0.5, y: 0.5},
-    {f: T_MON + 50, s: 1, x: 0.5, y: 0.5},
-    {f: T_MON + 170, s: V ? 2.6 : 2.15, x: 0.505, y: 0.2},
+    {f: T_MON + 20, s: 1, x: 0.5, y: 0.5},
+    {f: T_MON + 96, s: V ? 2.6 : 2.15, x: 0.505, y: 0.2},
   ];
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint="#bf5af2" intensity={0.25 * mon} />
       <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
-        <Words text="Y una isla." start={8} size={V ? 170 : 200} weight={600} gradient={GRAD} exitAt={T_MON - 24} />
+        <Words text={t.island} start={-8} stagger={4} size={V ? 170 : 210} weight={650} gradient={GRAD} exitAt={T_MON - 16} exitDur={14} />
       </AbsoluteFill>
       {frame >= T_MON - 2 ? (
         <div
@@ -118,14 +118,12 @@ export const IslandIntro: React.FC<{dur: number; slug?: string}> = ({dur, slug =
           right: 0,
           textAlign: 'center',
           fontFamily: FONT,
-          opacity: ramp(frame, T_MON + 110, T_MON + 150, EASE),
-          transform: `translateY(${(1 - ramp(frame, T_MON + 110, T_MON + 150, EASE)) * 16}px)`,
+          opacity: ramp(frame, T_MON + 36, T_MON + 60, EASE),
+          transform: `translateY(${(1 - ramp(frame, T_MON + 36, T_MON + 60, EASE)) * 16}px)`,
         }}
       >
-        <div style={{fontSize: V ? 60 : 50, fontWeight: 600, color: C.text, letterSpacing: '-0.02em'}}>omarchy-island</div>
-        <div style={{fontSize: V ? 34 : 28, color: C.dim, marginTop: 8}}>
-          Sale de la barra, justo donde está el reloj.
-        </div>
+        <div style={{fontSize: V ? 60 : 56, fontWeight: 650, color: C.text, letterSpacing: '-0.02em'}}>omarchy-island</div>
+        <div style={{fontSize: V ? 34 : 32, color: C.dim, marginTop: 8}}>{t.islandSub}</div>
       </div>
     </AbsoluteFill>
   );
@@ -138,18 +136,18 @@ export const IslandPeek: React.FC<{dur: number}> = ({dur}) => {
   const frame = useCurrentFrame();
   const {width: W, height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 18);
   const cw = V ? 1000 : 1280;
   const ch = Math.round((cw * 72) / 640); // solo la franja con la barra y el vistazo
   const fullH = Math.round((cw * 120) / 640);
-  const cardIn = useSpr(14, 45);
-  const drop = ramp(frame, 50, 80, EASE);
+  const t = useT();
+  const cardIn = useSpr(-14, 36);
+  const drop = ramp(frame, B, B + 20, EASE); // se asoma en el pulso 1
   const top = V ? H * 0.5 - ch / 2 : 470;
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint="#5c6bc0" intensity={0.25} />
       <div style={{position: 'absolute', top: V ? 400 : 150, left: 0, right: 0}}>
-        <Words text={V ? 'Se asoma cuando\ncambia la canción.' : 'Se asoma cuando cambia la canción.'} start={0} size={V ? 80 : 76} weight={600} />
+        <Words text={t.peek} start={-6} size={V ? 80 : 84} weight={650} />
       </div>
       <div
         style={{
@@ -178,17 +176,10 @@ export const IslandPeek: React.FC<{dur: number}> = ({dur}) => {
           fontFamily: FONT,
           fontSize: V ? 36 : 30,
           color: C.dim,
-          opacity: ramp(frame, 80, 110, EASE),
+          opacity: ramp(frame, B + 14, B + 36, EASE),
         }}
       >
-        {V ? (
-          <>
-            También con el temporizador, la batería
-            <br />y, si quieres, el volumen y el brillo.
-          </>
-        ) : (
-          'También con el temporizador, la batería y, si quieres, el volumen y el brillo.'
-        )}
+        {t.peekSub}
       </div>
     </AbsoluteFill>
   );
@@ -197,11 +188,12 @@ export const IslandPeek: React.FC<{dur: number}> = ({dur}) => {
 // ---------------------------------------------------------------------------
 // Abierta: reloj, páginas, agenda, mundo, clima
 // ---------------------------------------------------------------------------
-export const IslandOpen: React.FC<{dur: number; slug?: string}> = ({dur, slug = 'cupertino'}) => {
+export const IslandOpen: React.FC<{dur: number; slug?: string}> = ({slug = 'cupertino'}) => {
   const frame = useCurrentFrame();
+  const t = useT();
+  const tt = t;
   const {width: W, height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
   const cw = V ? 980 : 1020;
   const chh = islandCropH(cw);
   const cardIn = useSpr(10, 50);
@@ -232,11 +224,11 @@ export const IslandOpen: React.FC<{dur: number; slug?: string}> = ({dur, slug = 
 
   const textLeft = V ? 0 : left + cw + 90;
   const textTop = V ? top + chh + 90 : top + 10;
-  const FEAT = ['Agenda con recordatorios.', 'Hora mundial.', 'Clima con pronóstico.'];
+  const FEAT = t.openFeat;
   const featT = [T_ZOOM + 10, T_ZOOM + 80, T_ZOOM + 112];
 
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint={accent} intensity={0.22} y="50%" />
       <div
         style={{
@@ -292,7 +284,7 @@ export const IslandOpen: React.FC<{dur: number; slug?: string}> = ({dur, slug = 
 
       <div style={{position: 'absolute', left: textLeft, right: V ? 0 : 60, top: textTop}}>
         <Words
-          text={V ? 'Se abre desde el reloj.' : 'Se abre\ndesde el reloj.'}
+          text={t.open}
           start={10}
           size={V ? 72 : 76}
           weight={600}
@@ -325,7 +317,7 @@ export const IslandOpen: React.FC<{dur: number; slug?: string}> = ({dur, slug = 
                     transform: `translateX(${V ? 0 : on * 12}px)`,
                   }}
                 >
-                  {t.label}
+                  {tt.tabs[i]}
                 </div>
               );
             })}
@@ -365,23 +357,23 @@ export const IslandEdges: React.FC<{dur: number; slug?: string}> = ({dur, slug =
   const frame = useCurrentFrame();
   const {height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
   const mw = V ? 1000 : 1240;
   const mh = monitorHeight(mw);
   const top = V ? H * 0.5 - mh / 2 + 30 : 196;
   const sc = V ? 1.9 : 1.5;
+  const t = useT();
   const keys = [
     {f: 0, s: sc, x: 0.5, y: 0.0},
-    {f: 70, s: sc, x: 0.5, y: 0.0},
-    {f: 150, s: sc, x: 0.5, y: 1.0},
+    {f: B, s: sc, x: 0.5, y: 0.0},
+    {f: 2 * B + 20, s: sc, x: 0.5, y: 1.0},
   ];
-  const xf = ramp(frame, 96, 134, EASE_IO);
-  const monIn = useSpr(4, 45);
+  const xf = ramp(frame, 2 * B - 10, 2 * B + 10, EASE_IO); // cambia de borde en el pulso 2
+  const monIn = useSpr(0, 30);
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint={theme(slug).palette.accent} intensity={0.24} />
       <div style={{position: 'absolute', top: V ? 300 : 52, left: 0, right: 0}}>
-        <Words text={V ? 'En cualquier borde\nde la barra.' : 'En cualquier borde de la barra.'} start={0} size={V ? 80 : 76} weight={600} />
+        <Words text={t.edges} start={0} size={V ? 80 : 84} weight={650} />
       </div>
       <div style={{position: 'absolute', left: '50%', top, marginLeft: -mw / 2, opacity: monIn, transform: `scale(${0.96 + 0.04 * monIn})`}}>
         <Monitor w={mw} reflection={false} glow={theme(slug).palette.accent}>
@@ -405,10 +397,10 @@ export const IslandEdges: React.FC<{dur: number; slug?: string}> = ({dur, slug =
           fontFamily: FONT,
           fontSize: V ? 34 : 30,
           color: C.dim,
-          opacity: ramp(frame, 60, 90, EASE),
+          opacity: ramp(frame, 20, 44, EASE),
         }}
       >
-        Arriba, abajo, a la izquierda o a la derecha.
+        {t.edgesSub}
       </div>
     </AbsoluteFill>
   );
@@ -420,10 +412,10 @@ export const IslandEdges: React.FC<{dur: number; slug?: string}> = ({dur, slug =
 const RIBBON = ['cupertino', 'big-sur', 'tahoe', 'fluent', 'obsidiana', 'aero', 'ventura', 'graphite', 'fluent-light', 'aero-night', 'cupertino-light'];
 
 export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
+  const t = useT();
   const frame = useCurrentFrame();
   const {width: W, height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 22);
   const cw = V ? 720 : 620;
   const chh = islandCropH(cw);
   const gap = V ? 50 : 46;
@@ -433,10 +425,10 @@ export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
   const pos = interpolate(frame, [0, dur], [1.2, V ? 6.2 : 7.6], {easing: EASE_IO});
   const cur = Math.round(pos);
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint={theme(RIBBON[Math.min(RIBBON.length - 1, cur)]).palette.accent} intensity={0.25} />
       <div style={{position: 'absolute', top: V ? 300 : 80, left: 0, right: 0}}>
-        <Words text={V ? 'Toma los colores\nde tu tema.' : 'Toma los colores de tu tema.'} start={0} size={V ? 84 : 76} weight={600} />
+        <Words text={V ? t.colorsV : t.colors} start={0} size={V ? 88 : 84} weight={650} />
       </div>
       {RIBBON.map((slug, i) => {
         const d = i - pos;
@@ -453,7 +445,7 @@ export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
               left: x - cw / 2,
               top: cy - chh / 2,
               transform: `scale(${sc})`,
-              opacity: o * ramp(frame, 10 + i * 2, 40 + i * 2),
+              opacity: o,
               filter: ad > 0.1 ? `brightness(${1 - Math.min(ad, 2) * 0.22})` : undefined,
             }}
           >
@@ -476,41 +468,6 @@ export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
           </div>
         );
       })}
-    </AbsoluteFill>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Clip grabado en vivo (opcional, ver src/clips.ts)
-// ---------------------------------------------------------------------------
-export const LiveClip: React.FC<{dur: number; clip: Clip}> = ({dur, clip}) => {
-  const {height: H} = useVideoConfig();
-  const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
-  const mw = V ? 1000 : 1360;
-  const mh = monitorHeight(mw);
-  const top = V ? H * 0.5 - mh / 2 + 40 : 170;
-  const mon = useSpr(6, 45);
-  return (
-    <AbsoluteFill style={{opacity: fade}}>
-      <Backdrop tint="#7d7aff" intensity={0.22} />
-      {clip.caption ? (
-        <div style={{position: 'absolute', top: V ? 300 : 56, left: 0, right: 0}}>
-          <Words text={clip.caption} start={0} size={V ? 80 : 72} weight={600} />
-        </div>
-      ) : null}
-      <div style={{position: 'absolute', left: '50%', top, marginLeft: -mw / 2, opacity: mon, transform: `scale(${0.95 + 0.05 * mon})`}}>
-        <Monitor w={mw} reflection={!V}>
-          {({w, h}) => (
-            <OffthreadVideo
-              src={staticFile(clip.src)}
-              startFrom={Math.round((clip.start ?? 0) * 60)}
-              muted
-              style={{width: w, height: h, objectFit: 'cover'}}
-            />
-          )}
-        </Monitor>
-      </div>
     </AbsoluteFill>
   );
 };
