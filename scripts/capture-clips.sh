@@ -2,12 +2,15 @@
 # Graba los dos clips en vivo del promo en el escritorio 9, sin datos personales (con Silencio activo
 # y sin la página Mundo, que enseña ciudades y la ubicación del clima):
 #   public/clips/theme-switch.mp4  cambio de tema real (Cupertino → Tahoe → Aero Night → Obsidiana → Fluent Light)
-#   public/clips/island-open.mp4   el cursor va al reloj, clic, se abre la isla, Calendario, Inicio y se cierra
-# Además deja public/clips/<clip>.json con el segundo de cada acción (para sincronizar el tick).
+#   public/clips/island-open-<es|en>.mp4  el cursor va al reloj, clic y se abre la isla (en ese idioma)
+#   public/island-themes/<es|en>/<tema>.webp  la isla abierta en Inicio con cada uno de los once temas
+# Además deja public/clips/<clip>.json con el segundo de cada acción según el registro.
 #
-# uso: scripts/capture-clips.sh [theme|island]   (sin argumento graba los dos)
-# Dura unos 2 minutos. No toques la PC mientras corre. Al terminar (o si falla, o con Ctrl+C)
-# restaura tema, fondo, barra, escritorio y cursor, y deja las notificaciones en la isla.
+# uso: scripts/capture-clips.sh [theme|island|all]   (sin argumento graba todo)
+# Dura unos 4 minutos. No toques la PC mientras corre. Al terminar (o si falla, o con Ctrl+C)
+# restaura tema, fondo, barra, idioma de la isla, escritorio y cursor, y deja las notificaciones
+# en la isla. Los avisos de recarga de Ghostty, lazy.nvim y aether.nvim se apagan solo en las ventanas de
+# la demo (opciones de línea de órdenes): no se toca ninguna configuración.
 #
 # Requisitos: gpu-screen-recorder, ydotool (con ydotoold activo), ffmpeg, jq, ghostty, btop,
 # nvim, nautilus. Carpeta ~/tema-demo (proyecto falso, autor «demo») y la config de btop
@@ -40,6 +43,8 @@ ORIG_WS=$(hyprctl activeworkspace -j | jq -r .id)
 ORIG_CUR=$(hyprctl cursorpos)
 ORIG_NOTIF=$("${IPC[@]}" island state | jq -r .notifications)
 ORIG_DND=$(omarchy-shell notifications isDnd 2>/dev/null || echo off)
+ORIG_LANG=$(omarchy bar get thealejandro.island language 2>/dev/null); HAD_LANG=$?
+SHELL_JSON=$HOME/.config/omarchy/shell.json
 REC_PID=
 
 close_demo() {
@@ -50,11 +55,18 @@ close_demo() {
 }
 
 open_demo() {
-  setsid -f ghostty --class=demo.term --working-directory=$D -e fish -C 'clear; eza -l --icons --git --no-user --no-time; echo; git log --oneline --graph -3; echo' >/dev/null 2>&1
+  # Sin el aviso «Reloaded the configuration» al cambiar de tema (solo estas ventanas).
+  local G=(ghostty --app-notifications=no-config-reload)
+  setsid -f "${G[@]}" --class=demo.term --working-directory=$D -e fish -C 'clear; eza -l --icons --git --no-user --no-time; echo; git log --oneline --graph -3; echo' >/dev/null 2>&1
   sleep 1.2
-  setsid -f ghostty --class=demo.btop -e btop -c $S/btop/btop.conf >/dev/null 2>&1
+  setsid -f "${G[@]}" --class=demo.btop -e btop -c $S/btop/btop.conf >/dev/null 2>&1
   sleep 1.2
-  setsid -f ghostty --class=demo.nvim --working-directory=$D -e nvim src/app.ts >/dev/null 2>&1
+  # Sin el aviso «Config Change Detected» de lazy.nvim (solo este nvim; la opción se lee al recargar)
+  # ni el «aether.nvim reloaded…» del tema: se filtra vim.notify cuando LazyVim ya puso el suyo.
+  setsid -f "${G[@]}" --class=demo.nvim --working-directory=$D -e nvim \
+    -c 'lua pcall(function() require("lazy.core.config").options.change_detection.notify = false end)' \
+    -c 'lua vim.defer_fn(function() local n = vim.notify; vim.notify = function(m, ...) if type(m) == "string" and m:find("^aether%.nvim") then return end; return n(m, ...) end end, 2500)' \
+    src/app.ts >/dev/null 2>&1
   sleep 1.2
   setsid -f nautilus --new-window $D >/dev/null 2>&1
   sleep 4
@@ -109,6 +121,12 @@ restore() {
   "${IPC[@]}" island close >/dev/null 2>&1
   "${IPC[@]}" notifications "${ORIG_NOTIF:-island}" >/dev/null 2>&1
   omarchy-shell notifications setDnd "${ORIG_DND:-off}" >/dev/null 2>&1
+  if ((HAD_LANG == 0)); then
+    omarchy bar set thealejandro.island language "$(jq -Rn --arg v "$ORIG_LANG" '$v')" --json >/dev/null 2>&1
+  else  # no había clave: se quita (mismo archivo, sin cambiar el resto)
+    jq 'walk(if type == "object" and .id == "thealejandro.island" then del(.language) else . end)' "$SHELL_JSON" >"$RAW/shell.json" \
+      && [[ -s $RAW/shell.json ]] && cat "$RAW/shell.json" >"$SHELL_JSON"
+  fi
   omarchy bar position "$ORIG_BAR_POS" >/dev/null 2>&1
   omarchy bar background "$ORIG_BAR_BG" >/dev/null 2>&1
   close_demo
@@ -122,7 +140,7 @@ restore() {
   read -r ox oy <<<"$(tr -d ' ' <<<"$ORIG_CUR" | tr ',' ' ')"
   move_to "$ox" "$oy" 300
   rm -rf "$RAW"
-  echo "restaurado: tema $ORIG_THEME, fondo $ORIG_BG, barra $ORIG_BAR_POS/$ORIG_BAR_BG, escritorio $ORIG_WS, notificaciones ${ORIG_NOTIF:-island}, silencio ${ORIG_DND:-off}"
+  echo "restaurado: idioma de la isla ${ORIG_LANG:-(automático)}, tema $ORIG_THEME, fondo $ORIG_BG, barra $ORIG_BAR_POS/$ORIG_BAR_BG, escritorio $ORIG_WS, notificaciones ${ORIG_NOTIF:-island}, silencio ${ORIG_DND:-off}"
 }
 trap restore EXIT
 trap 'exit 130' INT TERM
@@ -155,10 +173,19 @@ take_theme() {
   rec_stop theme-switch
 }
 
-take_island() {
+set_lang() { # set_lang <es|en>: idioma de la isla (se restaura al final)
+  omarchy bar set thealejandro.island language "\"$1\"" --json >/dev/null 2>&1
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [[ $("${IPC[@]}" island state | jq -r .lang) == "$1" ]] && return 0
+    sleep 0.3
+  done
+  echo "la isla no cambió a $1" >&2; exit 1
+}
+
+take_island() { # take_island <es|en>
   prepare cupertino
   "${IPC[@]}" island page home >/dev/null 2>&1; sleep 0.3; "${IPC[@]}" island close >/dev/null 2>&1
-  rec_start island-open
+  rec_start "island-open-$1"
   mark inicio
   sleep 0.8
   mark cursor-al-reloj
@@ -168,29 +195,33 @@ take_island() {
   click
   sleep 0.4
   [[ $("${IPC[@]}" island state | jq -r .pinned) == true ]] || { mark respaldo-ipc-open; "${IPC[@]}" island open >/dev/null; }
-  sleep 1.8
-  # Pestañas de la isla (posición medida en las capturas a 1920 px): Calendario y vuelta a Inicio.
-  # Mundo no se graba: muestra las ciudades y la ubicación del clima.
-  for tab in "calendar 1154 52" "home 1125 52"; do
-    read -r name x y <<<"$tab"
-    move_to "$x" "$y" 450
-    sleep 0.15
-    mark clic-pestana "$name"
-    click
-    sleep 0.3
-    [[ $("${IPC[@]}" island state | jq -r .page) == "$name" ]] || { mark respaldo-ipc-page "$name"; "${IPC[@]}" island page "$name" >/dev/null; }
-    sleep 1.6
-  done
-  move_to 960 14 500
-  sleep 0.2
-  mark clic-cerrar
-  click
-  sleep 0.4
-  [[ $("${IPC[@]}" island state | jq -r .pinned) == false ]] || { mark respaldo-ipc-close; "${IPC[@]}" island close >/dev/null; }
-  move_to 1340 640 700
-  sleep 0.8
+  # Se queda abierta 3 s (Inicio y Calendario) y se corta: la página Mundo no se graba.
+  sleep 3
   mark fin
-  rec_stop island-open
+  rec_stop "island-open-$1"
+  "${IPC[@]}" island close >/dev/null 2>&1
+}
+
+# La isla abierta en Inicio con cada tema, recortada a la zona de la isla (sin el resto del escritorio).
+THEMES=(cupertino cupertino-light graphite big-sur ventura tahoe fluent fluent-light aero aero-night obsidiana)
+take_shots() { # take_shots <es|en>
+  local dir=$PWD/public/island-themes/$1
+  mkdir -p "$dir"
+  "${IPC[@]}" island close >/dev/null 2>&1
+  for t in "${THEMES[@]}"; do
+    omarchy theme set "$t" >/dev/null 2>&1
+    sleep 2.5
+    clear_notes
+    "${IPC[@]}" island page home >/dev/null 2>&1
+    "${IPC[@]}" island open >/dev/null 2>&1
+    sleep 1.2
+    grim -o "$MON" "$RAW/shot.png"
+    "${IPC[@]}" island close >/dev/null 2>&1
+    ffmpeg -loglevel error -y -i "$RAW/shot.png" -vf "crop=800:560:560:0" -c:v libwebp -quality 92 "$dir/$t.webp"
+    rm -f "$RAW/shot.png"
+    echo "listo: $dir/$t.webp"
+    sleep 0.3
+  done
 }
 
 # Silencio (no molestar) mientras se graba: no entra ninguna notificación real.
@@ -199,7 +230,7 @@ hyprctl dispatch "hl.dsp.focus({ workspace = \"$WS\" })" >/dev/null
 sleep 0.5
 case ${1:-all} in
   theme) take_theme ;;
-  island) take_island ;;
-  all) take_theme; take_island ;;
+  island) for l in es en; do set_lang $l; take_island $l; take_shots $l; done ;;
+  all) for l in es en; do set_lang $l; take_island $l; take_shots $l; done; take_theme ;;
   *) echo "uso: $0 [theme|island]" >&2; exit 2 ;;
 esac
