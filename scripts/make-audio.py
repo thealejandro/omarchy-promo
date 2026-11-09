@@ -289,20 +289,26 @@ def plan(version: str) -> dict:
             dict(a=16, b=22, t=0.0, fin=0.002, tail=0.012),             # gancho → Windows
             dict(a=102, b=102.75, t=f('propio'), fin=0.006, fout=0.025),  # «Y uno propio»: teclas
             dict(a=40, b=43, t=bt(isla), fin=0.003, tail=0.015),         # la isla
-            dict(a=97, b=98, t=f('cierre'), fin=0.006, tail=0.015),
-            dict(a=16, b=17, t=f('cierre', 4), fin=0.002, decay=0.9, fout=0.3),
+            # Cierre: la firma entra con el corte y el tema vuelve (compases 16-19, como el gancho)
+            # y se apaga despacio hasta el final.
+            dict(a=16, b=19, t=f('cierre'), fin=0.002, decay=3.2, fout=1.6),
         ]
         gain = [(0, 0), (f('live'), -1.5), (f('macos'), -1), (f('propio') - 0.01, -1), (f('propio'), -6),
                 (bt(isla) - 0.01, -6), (bt(isla), 0), (bt(isla + 1), -1.5), (f('colores'), -1),
-                (f('cierre') - 0.01, -1), (f('cierre'), -6), (f('cierre', 4) - 0.01, -6), (f('cierre', 4), 0)]
+                (f('cierre') - 0.01, -1), (f('cierre'), 0), (dur, -3)]
         hp = [(0, 20), (dur, 20)]
     click = f('abierta', 4)  # clic en el reloj (src/scenes/Live.tsx, CLICK = 4 pulsos)
-    lp = [(0, 20000), (click - 0.01, 20000), (click + 0.04, 850), (click + 0.35, 850), (click + bt(6), 20000),
-          (f('cierre') - 0.01, 20000), (f('cierre'), 3000), (f('cierre', 4) - 0.01, 2600), (f('cierre', 4), 20000),
-          (f('cierre', 4) + 0.05, 20000), (dur, 1200)]
+    lp = [(0, 20000), (click - 0.01, 20000), (click + 0.04, 850), (click + 0.35, 850), (click + bt(6), 20000)]
+    if version == 'h':
+        sig = f('cierre', 4)
+        lp += [(f('cierre') - 0.01, 20000), (f('cierre'), 3000), (sig - 0.01, 2600), (sig, 20000),
+               (sig + 0.05, 20000), (dur, 1200)]
+    else:  # reel: la firma entra con el corte del cierre
+        sig = f('cierre')
+        lp += [(sig, 20000), (f('cierre', 6), 20000), (dur, 1500)]
     shelf = [(0, 0), (dur, 0)]
     return dict(SC=SC, dur=dur, sections=sections, gain=gain, lp=lp, hp=hp, shelf=shelf,
-                hit_isla=bt(isla), click=click, t_sig=f('cierre', 4), silences=[(bt(isla - 1), bt(isla))])
+                hit_isla=bt(isla), click=click, t_sig=sig, silences=[(bt(isla - 1), bt(isla))])
 
 
 def music_bus(src: np.ndarray, P: dict, tmp: str) -> np.ndarray:
