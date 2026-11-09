@@ -14,7 +14,7 @@ Cada vídeo se renderiza en español (`es`) y en inglés (`en`).
 | Archivo | Formato | Duración |
 | --- | --- | --- |
 | `out/omarchy-promo-{es,en}.mp4` | 1920×1080, 60 fps, H.264 yuv420p CRF 18, faststart, AAC, −16 LUFS | 60,0 s |
-| `out/omarchy-reel-{es,en}.mp4` | 1080×1920 (Reels), 60 fps, mismo códec, −14 LUFS | 28,8 s |
+| `out/omarchy-reel-{es,en}.mp4` | 1080×1920 (Reels y estados de WhatsApp), 60 fps, mismo códec, −14 LUFS | 31,2 s |
 | `out/poster-{es,en}.jpg` | 1920×1080 | — |
 | `out/cover-{es,en}.jpg` | 1080×1920, portada del reel (lo importante cabe en el recorte 3:4) | — |
 
@@ -71,9 +71,13 @@ Windows.» → «Y uno propio.» → esquinas y bordes → paleta → barra → 
 → cualquier borde → colores del tema → cierre de ~5 s con una sola llamada a la acción
 (thealejandro.dev/omarchy) y la firma.
 
-Reel (28,8 s): gancho → en vivo → macOS → Windows → propio → la isla en vivo → colores →
-cierre con «Enlace en el perfil». Todo el texto queda en la zona segura de Reels
-(x 65–1015, y 269–1248); las imágenes van a sangre.
+Reel (31,2 s): pensado también para estados de WhatsApp, donde casi nadie conoce Omarchy y se
+ve sin sonido. Abre con «Hice 11 temas para Linux» y «Para Omarchy. Gratis y de código
+abierto.» desde el primer fotograma → en vivo → macOS → Windows → propio → la isla en vivo →
+colores → cierre de 7,2 s que entra en seco con el acorde: thealejandro.dev/omarchy en grande,
+«Gratis · enlace en el perfil», la firma y debajo las redes (@thealejandro__ en Instagram, X y
+Twitch; github.com/thealejandro) y el horario de los directos, como en thealejandro.dev. Todo
+el texto queda en la zona segura de Reels (x 65–1015, y 269–1248); las imágenes van a sangre.
 
 ## Clips en vivo
 

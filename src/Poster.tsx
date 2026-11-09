@@ -87,8 +87,8 @@ const CoverBody: React.FC = () => {
     <AbsoluteFill style={{background: C.bg}}>
       <Aurora opacity={0.3} />
       <div style={{position: 'absolute', top: 330, left: 0, right: 0}}>
-        <Words text={t.hookA} start={-200} size={138} weight={650} />
-        <Words text={t.hookB} start={-200} size={138} weight={300} gradient={GRAD} />
+        {/* Mismo mensaje que el gancho del reel: quién, para qué y que es gratis. */}
+        <Words text={t.hookV} start={-200} size={124} weight={650} />
       </div>
       {FAN.map((f, i) => (
         <div
@@ -121,7 +121,7 @@ const CoverBody: React.FC = () => {
           gap: 26,
         }}
       >
-        <div style={{fontFamily: FONT, fontSize: 50, fontWeight: 600, color: C.text, letterSpacing: '-0.015em'}}>{t.hookSub}</div>
+        <div style={{fontFamily: FONT, fontSize: 50, fontWeight: 600, color: C.text, letterSpacing: '-0.015em', textAlign: 'center', maxWidth: 950}}>{t.hookSubV}</div>
         <Img src={staticFile('marca/logotipo.svg')} style={{width: 340, height: 'auto'}} />
       </div>
     </AbsoluteFill>

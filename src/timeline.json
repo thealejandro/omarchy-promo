@@ -27,7 +27,7 @@
     {"id": "windows", "beats": 4, "tr": 16, "fx": "cover"},
     {"id": "propio", "beats": 4},
     {"id": "abierta", "beats": 8},
-    {"id": "colores", "beats": 4, "tr": 16, "fx": "cover"},
-    {"id": "cierre", "beats": 8}
+    {"id": "colores", "beats": 4},
+    {"id": "cierre", "beats": 12}
   ]
 }
