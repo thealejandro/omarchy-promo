@@ -1,0 +1,18 @@
+[
+  {
+    "t": 1.202,
+    "what": "inicio"
+  },
+  {
+    "t": 2.006,
+    "what": "cursor-al-reloj"
+  },
+  {
+    "t": 3.571,
+    "what": "clic-reloj"
+  },
+  {
+    "t": 7.075,
+    "what": "fin"
+  }
+]
