@@ -1,0 +1,33 @@
+{
+  "_doc": "Única fuente de verdad de los tiempos (la leen src/Timeline.tsx y scripts/make-audio.py). La música va a 100 BPM: un pulso = 36 fotogramas a 60 fps. Cada escena empieza justo en un pulso y dura `beats` pulsos hasta la siguiente; `tr` son los fotogramas de transición hacia la siguiente (0 = corte seco en el pulso) y `fx` su presentación.",
+  "fps": 60,
+  "beat": 36,
+  "h": [
+    {"id": "hook", "beats": 8},
+    {"id": "once", "beats": 8},
+    {"id": "live", "beats": 8},
+    {"id": "macos", "beats": 8, "tr": 18, "fx": "slide"},
+    {"id": "windows", "beats": 6, "tr": 16, "fx": "cover"},
+    {"id": "propio", "beats": 4},
+    {"id": "esquinas", "beats": 8},
+    {"id": "paleta", "beats": 8, "tr": 18, "fx": "slide"},
+    {"id": "barra", "beats": 6},
+    {"id": "claro", "beats": 6},
+    {"id": "isla", "beats": 4},
+    {"id": "vistazo", "beats": 3},
+    {"id": "abierta", "beats": 8},
+    {"id": "bordes", "beats": 3, "tr": 18, "fx": "slide"},
+    {"id": "colores", "beats": 4, "tr": 16, "fx": "cover"},
+    {"id": "cierre", "beats": 8}
+  ],
+  "v": [
+    {"id": "hook", "beats": 8},
+    {"id": "live", "beats": 6},
+    {"id": "macos", "beats": 6, "tr": 18, "fx": "slide"},
+    {"id": "windows", "beats": 4, "tr": 16, "fx": "cover"},
+    {"id": "propio", "beats": 4},
+    {"id": "abierta", "beats": 8},
+    {"id": "colores", "beats": 4, "tr": 16, "fx": "cover"},
+    {"id": "cierre", "beats": 8}
+  ]
+}
