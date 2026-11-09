@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 """Diseño sonoro del promo: arreglo de «Limit 70» + efectos sintetizados + mezcla final.
 
-Genera public/audio/mix-h.m4a (88,633 s) y public/audio/mix-v.m4a (45,133 s) a partir del MP3
-original de Kevin MacLeod (CC BY 4.0, no se versiona). Todo es determinista: mismas entradas,
-mismo resultado. Solo usa numpy, ffmpeg y rubberband.
+Genera public/audio/mix-h.m4a (horizontal, 60 s) y public/audio/mix-v.m4a (reel, 28,8 s) a partir
+del MP3 original de Kevin MacLeod (CC BY 4.0, no se versiona). Todo es determinista: mismas
+entradas, mismo resultado. Solo usa numpy, ffmpeg y rubberband.
 
     python3 scripts/make-audio.py "Limit 70.mp3" [--stems DIR] [--only h|v]
 
-Qué hace, por versión:
-  1. Arreglo: trocea el original en compases (102,65 BPM), estira cada sección con rubberband
-     para que los golpes caigan en el fotograma exacto y las coloca en la línea de tiempo con
-     cortes secos, silencios y la capa suave (piano eléctrico) en la intro, «Y uno propio» y el
-     cierre.
-  2. Automatización por escena: paso bajo, paso alto, estante de agudos y volumen (EQ en el
-     dominio STFT, curvas suaves) + envío corto de reverb para que los cortes respiren.
-  3. Efectos (síntesis propia): ticks de interfaz, soplidos, golpes graves, tono de la isla,
-     soplido inverso; cada uno colocado en un fotograma concreto (tabla CUES_*).
-  4. Mezcla: música a -17 LUFS, efectos por debajo, normalización final a -16 LUFS y limitador
-     de pico real a -1,5 dBTP (sobremuestreo x4). Codifica AAC 256 kb/s.
+Los tiempos salen de src/timeline.json (la misma fuente que usa el vídeo): la música se ajusta
+a 100 BPM, así que un pulso dura 36 fotogramas y cada escena empieza justo en un pulso.
 
-Las escenas y sus fotogramas reflejan src/Promo.tsx, src/PromoVertical.tsx y src/scenes/*.
-Si cambias duraciones o tiempos internos de escena, actualiza SCENES_* y CUES_* aquí.
+Qué hace, por versión:
+  1. Arreglo: trocea el original en compases (102,65 BPM), los lleva a 100 BPM con rubberband y
+     coloca cada sección en el pulso de su escena, con cortes secos. El tema completo arranca en
+     el fotograma 0 con un golpe grave; antes de la isla hay un solo pulso de silencio con un
+     crescendo, y el cierre acaba en un acorde que se apaga.
+  2. Automatización por escena: volumen, paso bajo (cae en el clic de la isla y se reabre),
+     paso alto ligero y un envío corto de reverb para que los cortes respiren.
+  3. Efectos (síntesis propia): ticks de interfaz en cada cambio que se ve (desfile, temas,
+     carruseles, clic), tono de la isla y golpes graves. Pocos soplidos.
+  4. Máster: reel a -14 LUFS, horizontal a -16 LUFS, limitador de pico real (sobremuestreo x4)
+     para quedar en ≤ -1 dBTP. Codifica AAC 256 kb/s.
+
+Si cambias tiempos internos de una escena (src/scenes/*), actualiza cues() aquí.
 """
 from __future__ import annotations
 
@@ -37,41 +39,34 @@ import numpy as np
 SR = 48000
 FPS = 60
 BAR = 2.338102  # duración de un compás en el original (102,65 BPM, 4/4)
-T0 = -0.0145  # primer pulso del original
-BEAT = BAR / 4
-OVERLAP = 14  # fotogramas de solape entre escenas (src/Promo.tsx)
+T0 = 0.020  # primer pulso del original (medido sobre los ataques de la mezcla)
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+with open(os.path.join(ROOT, 'src', 'timeline.json')) as _fh:
+    TL = json.load(_fh)
+B = TL['beat']  # fotogramas por pulso (36 a 60 fps = 100 BPM)
+BEAT_S = B / FPS  # 0,6 s
+TEMPO = BAR / (4 * BEAT_S)  # factor de rubberband: 102,65 -> 100 BPM
+LUFS = {'h': -16.0, 'v': -14.0}
 
 
 def sec_of_bar(n: float) -> float:
     return n * BAR + T0
 
 
-def s(x: float) -> int:  # igual que s() de src/lib.tsx
-    return round(x * FPS)
-
-
-def scene_starts(durs: list[tuple[str, float]]) -> dict[str, int]:
-    out, t = {}, 0
-    for name, d in durs:
-        out[name] = t
-        t += s(d) - OVERLAP
-    out['_end'] = t + OVERLAP
+def scene_starts(version: str) -> dict[str, int]:
+    """Fotograma de inicio de cada escena (siempre en un pulso) y '_end'."""
+    out, beats = {}, 0
+    for e in TL[version]:
+        out[e['id']] = beats * B
+        beats += e['beats']
+    out['_end'] = beats * B
     return out
 
 
-# --- Escenas (segundos, como en los .tsx) ---------------------------------------------------
-SCENES_H = scene_starts([
-    ('intro', 5.5), ('once', 10.067), ('macos', 8.9), ('windows', 6.017), ('propio', 5.433),
-    ('esquinas', 6.6), ('paleta', 6.583), ('barra', 5.433), ('claro', 6.017), ('isla', 4.867),
-    ('vistazo', 3.117), ('abierta', 6.6), ('bordes', 3.7), ('colores', 3.7), ('cierre', 9.367),
-])
-SCENES_V = scene_starts([
-    ('intro', 3.6), ('once', 8.917), ('macos', 5.433), ('windows', 3.7), ('propio', 3.717),
-    ('isla', 3.7), ('abierta', 6.017), ('colores', 2.55), ('cierre', 9.367),
-])
-# Tiempos internos de Close.tsx: caja del comando, URL y firma (fotogramas desde el inicio).
-CLOSE_BOX, CLOSE_URL, CLOSE_SIG = 150, 276, 346
+def bt(n: float) -> float:
+    """Pulso n de la línea de tiempo, en segundos."""
+    return n * BEAT_S
 
 
 # =============================================================================================
@@ -224,15 +219,15 @@ def stretch(src: np.ndarray, a: float, b: float, tempo: float, tmp: str, pad: fl
 def arrange(src: np.ndarray, sections: list[dict], dur: float, tmp: str) -> np.ndarray:
     """Coloca secciones de compases en la línea de tiempo.
 
-    Cada sección: a, b (compases del original), t (inicio en el vídeo, s), tempo o 'to' (fin en
-    el vídeo, s: entonces el tempo se calcula para que encaje), fin (fundido de entrada, s),
+    Cada sección: a, b (compases del original), t (inicio en el vídeo, s), tempo (por defecto
+    TEMPO, 100 BPM) o 'to' (fin en el vídeo, s: entonces el tempo se calcula para que encaje), fin (fundido de entrada, s),
     fout (fundido de salida al final, s; 0,02 = corte seco), tail (s que sigue sonando tras b
     para fundir con la sección siguiente).
     """
     out = np.zeros((int(round(dur * SR)), 2))
     for sec in sections:
         sa, sb = sec_of_bar(sec['a']), sec_of_bar(sec['b'])
-        tempo = sec.get('tempo') or (sb - sa) / (sec['to'] - sec['t'])
+        tempo = sec.get('tempo') or ((sb - sa) / (sec['to'] - sec['t']) if 'to' in sec else TEMPO)
         y, k0 = stretch(src, sa, sb, tempo, tmp)
         body = int(round((sb - sa) / tempo * SR))
         tail = int(round(sec.get('tail', 0.0) * SR))
@@ -262,89 +257,52 @@ def arrange(src: np.ndarray, sections: list[dict], dur: float, tmp: str) -> np.n
 
 
 def plan(version: str) -> dict:
-    """Arreglo, automatización y golpes de cada versión (tiempos en segundos del vídeo).
+    """Arreglo y automatización de cada versión (tiempos en pulsos de la línea de tiempo).
 
     Estructura del original (8 compases: 4 en Fa# mayor, 4 en Re# menor):
       0-7 capa suave (piano eléctrico y pad) | 8-15 + percusión ligera | 16-95 tema completo
       96-103 puente suave | 104-111 + percusión ligera | 112-127 tema completo y final seco.
     """
-    if version == 'h':
-        SC, tempo = SCENES_H, 1.01107
-        hit1 = (SC['once'] + 7) / FPS  # «Once temas.» (fotograma 323)
-    else:
-        SC, tempo = SCENES_V, 1.01046
-        hit1 = (SC['once'] + 7) / FPS  # fotograma 209
-    bar = BAR / tempo
-    beat = bar / 4
-    t_url = (SC['cierre'] + CLOSE_URL) / FPS
-    t_sig = (SC['cierre'] + CLOSE_SIG) / FPS
+    SC = scene_starts(version)
+    p = lambda name, beats=0: SC[name] / B + beats  # pulso absoluto de una escena
+    f = lambda name, beats=0: bt(p(name, beats))   # ídem en segundos
     dur = SC['_end'] / FPS
-    f = lambda name, off=0: (SC[name] + off) / FPS
-
     if version == 'h':
-        a_end = hit1 + 10.5 * bar           # 29,664: entra «Y uno propio.»
-        light = a_end + 2 * bar             # 34,289: vuelve el pulso (filtrado)
-        full = light + 4 * bar              # 43,539: tema completo (2º cambio de paleta)
-        cut2 = full + 6 * bar               # 57,414: corte seco antes de «Y una isla.»
-        hit2 = cut2 + 2 * beat              # 58,571: golpe de la isla
-        close = hit2 + 9 * bar              # 79,384: «Once temas. Una isla.»
+        isla = p('isla')
         sections = [
-            # Intro: solo la capa suave (compases 5,7-7,75), fundido lento; corte seco un pulso antes.
-            dict(a=7.75 - (hit1 - beat) * tempo / BAR, b=7.75, t=0.0, tempo=tempo, fin=2.6, fin_shape='slow', fout=0.02),
-            dict(a=16, b=26.5, t=hit1, tempo=tempo, fin=0.003, tail=0.012),            # golpe y montaje
-            dict(a=102, b=104, t=a_end, tempo=tempo, fin=0.006, tail=0.012),           # «Y uno propio»: solo teclas
-            dict(a=104, b=108, t=light, tempo=tempo, fin=0.004, tail=0.012),           # esquinas: percusión ligera
-            dict(a=116, b=122, t=full, tempo=tempo, fin=0.003, fout=0.025),            # paleta, barra, claro/oscuro
-            dict(a=40, b=49, t=hit2, tempo=tempo, fin=0.003, tail=0.015),              # la isla
-            dict(a=97, b=99, t=close, to=t_url, fin=0.006, tail=0.015, gain=0),        # cierre: teclas
-            dict(a=127.5, b=128, t=t_url, to=t_sig, fin=0.004, fout=0.012),             # remate de 2 pulsos
-            dict(a=16, b=17, t=t_sig, tempo=tempo, fin=0.002, decay=0.9, fout=0.3),   # acorde final (Fa#)
+            dict(a=16, b=25.5, t=0.0, fin=0.002, tail=0.012),          # gancho → Windows: tema completo
+            dict(a=102, b=103, t=f('propio'), fin=0.006, tail=0.012),   # «Y uno propio»: solo teclas
+            dict(a=104, b=106, t=f('esquinas'), fin=0.004, tail=0.012),  # esquinas: percusión ligera
+            dict(a=116, b=120.75, t=f('paleta'), fin=0.003, fout=0.025),  # paleta, barra, claro/oscuro
+            dict(a=40, b=45.5, t=bt(isla), fin=0.003, tail=0.015),       # la isla
+            dict(a=97, b=98, t=f('cierre'), fin=0.006, tail=0.015),      # cierre: teclas
+            dict(a=16, b=17, t=f('cierre', 4), fin=0.002, decay=0.9, fout=0.3),  # acorde final (Fa#)
         ]
-        # Escalones de volumen (dB): la capa suave queda claramente por debajo del tema completo.
-        gain = [(0, -5), (hit1 - 0.01, -5), (hit1, 0), (f('macos'), -1), (f('windows'), -1.5),
-                (a_end - 0.01, -1.5), (a_end, -7), (light - 0.01, -7), (light, -5), (full - 0.01, -2.5),
-                (full, -0.5), (cut2, -0.5), (hit2, 0), (f('vistazo'), 0), (f('vistazo', 12), -4),
-                (f('abierta'), -4), (f('abierta', 30), -2), (f('bordes'), -1), (close - 0.01, -1),
-                (close, -7), (t_url - 0.01, -8), (t_url, -1), (t_sig, 0)]
-        lp = [(0, 260), (hit1 - beat - 0.15, 4200), (hit1 - 0.01, 4200), (hit1, 20000),
-              (f('windows'), 20000), (a_end - 0.08, 1500),                       # Windows se oscurece
-              (a_end, 2600), (light - 0.01, 2400), (light, 1100), (full - 0.1, 9000), (full, 20000),
-              (f('claro', 188) - 0.05, 20000), (f('claro', 188) + 0.35, 1300), (cut2, 1300),  # «oscuro»
-              (hit2, 20000), (f('abierta', 40), 20000), (f('abierta', 46), 850), (f('abierta', 56), 850),
-              (hit2 + 5 * bar, 20000),                                              # se reabre en 1,5 compases
-              (close - 0.01, 20000), (close, 3000), (t_url - 0.01, 2200), (t_url, 2500), (t_sig, 20000),
-              (t_sig + 0.05, 20000), (dur, 1200)]
-        hp = [(0, 20), (f('vistazo'), 20), (f('vistazo', 12), 170), (f('abierta'), 170), (f('abierta', 12), 20), (dur, 20)]
-        shelf = [(0, 0), (f('claro'), 0), (f('claro', 20), 2.5), (f('claro', 185), 2.5), (f('claro', 195), 0), (dur, 0)]
-        silences = [(hit1 - beat, hit1), (cut2, hit2)]
+        gain = [(0, 0), (f('live'), -1.5), (f('macos'), -1), (f('propio') - 0.01, -1), (f('propio'), -6),
+                (f('esquinas') - 0.01, -6), (f('esquinas'), -4), (f('paleta') - 0.01, -4), (f('paleta'), -0.5),
+                (bt(isla), 0), (f('vistazo'), 0), (f('vistazo', 0.3), -3), (f('abierta'), -2), (f('bordes'), -1),
+                (f('cierre') - 0.01, -1), (f('cierre'), -6), (f('cierre', 4) - 0.01, -6), (f('cierre', 4), 0)]
+        hp = [(0, 20), (f('vistazo'), 20), (f('vistazo', 0.3), 170), (f('abierta'), 170), (f('abierta', 0.3), 20), (dur, 20)]
     else:
-        a_end = hit1 + 7.5 * bar            # 20,837: «Y uno propio.»
-        cut2 = a_end + bar                  # 23,151: corte seco
-        hit2 = cut2 + 2 * beat              # 24,308: «Y una isla.»
-        close = hit2 + 5 * bar              # 35,877
+        isla = p('abierta')
         sections = [
-            dict(a=7.75 - (hit1 - beat) * tempo / BAR, b=7.75, t=0.0, tempo=tempo, fin=1.9, fin_shape='slow', fout=0.02),
-            dict(a=16, b=23.5, t=hit1, tempo=tempo, fin=0.003, tail=0.012),
-            dict(a=103, b=104, t=a_end, tempo=tempo, fin=0.006, fout=0.025),
-            dict(a=40, b=45, t=hit2, tempo=tempo, fin=0.003, tail=0.015),
-            dict(a=101, b=103, t=close, to=t_url, fin=0.006, tail=0.015),
-            dict(a=127.5, b=128, t=t_url, to=t_sig, fin=0.004, fout=0.012),
-            dict(a=16, b=17, t=t_sig, tempo=tempo, fin=0.002, decay=0.9, fout=0.3),
+            dict(a=16, b=22, t=0.0, fin=0.002, tail=0.012),             # gancho → Windows
+            dict(a=102, b=102.75, t=f('propio'), fin=0.006, fout=0.025),  # «Y uno propio»: teclas
+            dict(a=40, b=43, t=bt(isla), fin=0.003, tail=0.015),         # la isla
+            dict(a=97, b=98, t=f('cierre'), fin=0.006, tail=0.015),
+            dict(a=16, b=17, t=f('cierre', 4), fin=0.002, decay=0.9, fout=0.3),
         ]
-        gain = [(0, -5), (hit1 - 0.01, -5), (hit1, 0), (f('macos'), -1), (f('windows'), -1.5),
-                (a_end - 0.01, -1.5), (a_end, -7), (cut2, -7), (hit2, 0), (f('abierta'), -2),
-                (f('colores'), -1), (close - 0.01, -1), (close, -7), (t_url - 0.01, -8), (t_url, -1), (t_sig, 0)]
-        lp = [(0, 260), (hit1 - beat - 0.15, 4200), (hit1 - 0.01, 4200), (hit1, 20000),
-              (f('windows'), 20000), (a_end - 0.08, 1500), (a_end, 2400), (cut2, 2000),
-              (hit2, 20000), (f('abierta', 40), 20000), (f('abierta', 46), 850), (f('abierta', 56), 850),
-              (hit2 + 3.5 * bar, 20000),
-              (close - 0.01, 20000), (close, 3000), (t_url - 0.01, 2200), (t_url, 2500), (t_sig, 20000),
-              (t_sig + 0.05, 20000), (dur, 1200)]
+        gain = [(0, 0), (f('live'), -1.5), (f('macos'), -1), (f('propio') - 0.01, -1), (f('propio'), -6),
+                (bt(isla) - 0.01, -6), (bt(isla), 0), (bt(isla + 1), -1.5), (f('colores'), -1),
+                (f('cierre') - 0.01, -1), (f('cierre'), -6), (f('cierre', 4) - 0.01, -6), (f('cierre', 4), 0)]
         hp = [(0, 20), (dur, 20)]
-        shelf = [(0, 0), (dur, 0)]
-        silences = [(hit1 - beat, hit1), (cut2, hit2)]
+    click = f('abierta', 4)  # clic en el reloj (src/scenes/Live.tsx, CLICK = 4 pulsos)
+    lp = [(0, 20000), (click - 0.01, 20000), (click + 0.04, 850), (click + 0.35, 850), (click + bt(6), 20000),
+          (f('cierre') - 0.01, 20000), (f('cierre'), 3000), (f('cierre', 4) - 0.01, 2600), (f('cierre', 4), 20000),
+          (f('cierre', 4) + 0.05, 20000), (dur, 1200)]
+    shelf = [(0, 0), (dur, 0)]
     return dict(SC=SC, dur=dur, sections=sections, gain=gain, lp=lp, hp=hp, shelf=shelf,
-                hit1=hit1, hit2=hit2, t_url=t_url, t_sig=t_sig, close=close, silences=silences, bar=bar)
+                hit_isla=bt(isla), click=click, t_sig=f('cierre', 4), silences=[(bt(isla - 1), bt(isla))])
 
 
 def music_bus(src: np.ndarray, P: dict, tmp: str) -> np.ndarray:
@@ -504,76 +462,57 @@ def sfx_swell(rng, dur=1.0):
 
 # --- Tabla de eventos ----------------------------------------------------------------------
 # (tipo, fotograma o segundos, nivel de pico dBFS antes de normalizar, parámetros, motivo)
-PEAK = dict(tick=-27, tick_s=-32, whoosh=-27, whoosh_s=-31, sub=-15, sub_s=-18, tone=-24, tone_s=-28, swell=-30)
+PEAK = dict(tick=-27, tick_s=-33, whoosh=-27, whoosh_s=-33, sub=-15, sub_s=-18, tone=-24, tone_s=-28, swell=-30)
+N_MACOS, N_WINDOWS = 6, 4  # temas de cada carrusel (src/lib.tsx)
 
 
 def cues(version: str, P: dict) -> list[dict]:
     SC = P['SC']
+    V = version == 'v'
     out: list[dict] = []
 
     def add(kind, frame=None, sec=None, why='', **kw):
         t = sec if sec is not None else frame / FPS
         out.append(dict(kind=kind, t=t, frame=round(t * FPS, 2), why=why, **kw))
 
-    V = version == 'v'
-    # Golpes en la música
-    add('sub', sec=P['hit1'], why='«Once temas.»: vuelve la música tras el silencio')
-    add('swell', sec=P['hit2'], why='soplido inverso hacia «Y una isla.»')
-    add('sub', sec=P['hit2'], why='«Y una isla.»: golpe tras el corte seco')
-    # Once temas: monitor, montaje, rejilla, reordenado, etiquetas
-    o = SC['once']
-    D = 22 if V else 26
-    T_GRID = 96 + D * 11
-    T_SORT = T_GRID + (70 if V else 90)
-    add('whoosh_s', o + 96, why='entra el monitor del montaje', dur=0.6, lo=250, hi=1800)
-    for i in range(1, 11):
-        add('tick', o + 96 + D * i + 1, why=f'montaje: tema {i + 1} de 11', pitch=1 + 0.012 * i, p=(-1) ** i * 0.15)
-    add('whoosh', o + T_GRID + 20, why='el monitor se encoge a la rejilla', dur=0.9, lo=300, hi=3000, peak=0.45)
-    for i in range(10):
-        add('tick_s', o + T_GRID + 16 + 3 * i, why='rejilla: aparecen las tarjetas', pitch=1.25 + 0.03 * i,
-            p=-0.6 + 0.12 * i, bright=0.8)
-    add('whoosh_s', o + T_SORT + 27, why='se reordena por familias', dur=0.9, lo=220, hi=1500, p0=0.4, p1=-0.4)
-    for i in range(3):
-        add('tick_s', o + T_SORT + 34 + 8 * i, why='etiqueta de familia', pitch=0.92 + 0.04 * i)
-    # Carruseles
-    for name, n, per in (('macos', 6, 45 if V else 75), ('windows', 4, 48 if V else 78)):
-        add('whoosh_s', SC[name] + 28, why=f'entra el carrusel ({name})', dur=0.7, lo=280, hi=2000, p0=0.7, p1=0)
+    # Gancho: golpe grave en el fotograma 0 y un tick en cada tema del desfile (cada medio pulso).
+    add('sub', 0, why='fotograma 0: golpe grave con el desfile de temas')
+    for k in range(1, 11):
+        add('tick_s', k * B // 2, why=f'desfile: tema {k + 1} de 11', pitch=0.95 + 0.02 * k, p=(-1) ** k * 0.2, bright=0.85)
+    if not V:  # «Once temas.»: el único soplido del montaje, al reordenarse por familias
+        o = SC['once']
+        add('whoosh_s', o + 4 * B + 8, why='se reordena por familias', dur=0.8, lo=220, hi=1500, p0=0.4, p1=-0.4)
+        for i in range(3):
+            add('tick_s', o + 4 * B + 34 + 8 * i, why='etiqueta de familia', pitch=0.92 + 0.04 * i)
+    # Cambio de tema en vivo: el cambio cae en los pulsos impares de la escena.
+    for k in range(3 if V else 4):
+        add('tick', SC['live'] + (2 * k + 1) * B, why=f'cambio de tema en vivo ({k + 1})', pitch=1.0 + 0.02 * k)
+    # Carruseles: el tema k queda centrado en el pulso first + k - 1.
+    first = 1 if V else 2
+    for name, n in (('macos', N_MACOS), ('windows', N_WINDOWS)):
         for k in range(1, n):
-            add('tick', SC[name] + 34 + per * k - 17, why=f'{name}: cambia el tema ({k + 1}/{n})',
-                pitch=0.96 + 0.015 * k, p=0.15)
-    add('whoosh_s', SC['propio'] + 72, why='«Y uno propio.»: sube Obsidiana', dur=1.1, lo=140, hi=900, p0=0, p1=0)
+            add('tick', SC[name] + (first + k - 1) * B, why=f'{name}: tema {k + 1} de {n}', pitch=0.96 + 0.015 * k, p=0.15)
+    add('tick_s', SC['propio'] + 30, why='«Y uno propio.»: etiqueta de Obsidiana', pitch=0.9)
     if not V:
-        add('tick_s', SC['esquinas'] + 196, why='esquinas: Big Sur pasa a Ventura', pitch=0.9)
-        for i in range(10):
-            add('tick_s', SC['paleta'] + 78 + 4 * i, why='paleta: llegan los colores', pitch=1.1 + 0.025 * i,
-                p=-0.5 + 0.1 * i, bright=0.7)
-        for k, st in enumerate((150, 235, 320)):
-            add('tick', SC['paleta'] + st + 13, why=f'paleta: cambia el tema ({k + 2}/4)', pitch=1.0 + 0.02 * k)
-        for k, st in enumerate((120, 215)):
-            add('tick', SC['barra'] + st + 8, why=('barra: cristal' if k == 0 else 'barra: transparente'), pitch=0.94)
-        add('tick', SC['claro'] + 188, why='claro → oscuro (la música se oscurece)', pitch=0.85)
-    # Isla
-    i0 = SC['isla']
-    add('whoosh_s', i0 + 112, why='entra el monitor con la isla', dur=0.8, lo=200, hi=1600, p0=-0.2, p1=0.2)
+        add('tick_s', SC['esquinas'] + 4 * B, why='esquinas: cambia de tema', pitch=0.9)
+        for k, b in enumerate((3, 5, 7)):
+            add('tick', SC['paleta'] + b * B, why=f'paleta: tema {k + 2} de 4', pitch=1.0 + 0.02 * k)
+        for k, b in enumerate((2, 4)):
+            add('tick', SC['barra'] + b * B, why=('barra: cristal' if k == 0 else 'barra: transparente'), pitch=0.94)
+        add('tick', SC['claro'] + 3 * B, why='claro/oscuro: cambia de pareja', pitch=0.85)
+    # Pulso de silencio con un solo crescendo y vuelta con golpe.
+    add('swell', sec=P['hit_isla'], why='crescendo en el pulso de silencio antes de la isla')
+    add('sub', sec=P['hit_isla'], why='vuelve la música: la isla')
     if not V:
-        add('tone_s', SC['vistazo'] + 50, why='la isla se asoma (cambio de canción)', notes=[(1108.73, 0, 1.0)])
-    a0 = SC['abierta']
-    add('tone', a0 + 46, why='se abre la isla desde el reloj', notes=[(739.99, 0, 1.0), (1108.73, 0.085, 0.8)])
-    for k in range(1, 4):
-        add('tick_s', a0 + 90 + 28 * k - 22, why=f'isla: pestaña {k + 1}', pitch=1.15 + 0.03 * k)
-    add('whoosh_s', a0 + 225, why='zoom a la agenda', dur=0.7, lo=260, hi=1700)
-    for k, ft in enumerate((218, 288, 320)):
-        add('tick_s', a0 + ft, why='isla: aparece una función', pitch=1.0 + 0.04 * k)
+        add('tone_s', SC['vistazo'] + B + 8, why='la isla se asoma (cambio de canción)', notes=[(1108.73, 0, 1.0)])
+    add('tick', sec=P['click'], why='clic en el reloj', pitch=0.88)
+    add('tone', sec=P['click'] + 4 / FPS, why='se abre la isla', notes=[(739.99, 0, 1.0), (1108.73, 0.085, 0.8)])
+    add('tick_s', sec=P['click'] + 35 / FPS, why='pestaña Calendario', pitch=1.2)
     if not V:
-        add('tick_s', SC['bordes'] + 106, why='la isla cambia de borde', pitch=0.95)
-    # Cierre
-    c0 = SC['cierre']
-    add('tick_s', c0 + CLOSE_BOX + 4, why='aparece la tarjeta del comando', pitch=0.9)
-    add('tick', c0 + CLOSE_URL, why='aparece thealejandro.dev/omarchy (entra el remate)', pitch=1.05)
+        add('tick_s', SC['bordes'] + 2 * B, why='la isla cambia de borde', pitch=0.95)
     add('sub_s', sec=P['t_sig'], why='firma: acorde final', f0=60, f1=36, decay=0.7)
     add('tone_s', sec=P['t_sig'], why='firma: nota final', notes=[(739.99, 0.0, 0.7), (1108.73, 0.0, 0.45)], decay=1.6)
     return sorted(out, key=lambda c: c['t'])
-
 
 def sfx_bus(version: str, P: dict, dur: float) -> tuple[np.ndarray, list[dict]]:
     n = int(round(dur * SR))
@@ -607,21 +546,25 @@ def sfx_bus(version: str, P: dict, dur: float) -> tuple[np.ndarray, list[dict]]:
 # =============================================================================================
 # 3. Mezcla y máster
 # =============================================================================================
-def master(mix: np.ndarray, out_m4a: str, tmp: str, target=-16.0, ceil_db=-1.5) -> dict:
+def master(mix: np.ndarray, out_m4a: str, tmp: str, target=-16.0, ceil_db=-1.6) -> dict:
+    """Ganancia + limitador de pico real; se mide sobre el AAC final (el códec mueve unas décimas)."""
     wav = os.path.join(tmp, 'mix.wav')
     lim = os.path.join(tmp, 'lim.wav')
     save(wav, mix)
     gain = target - ebur128(wav)['I']
-    for _ in range(3):
+    for _ in range(8):
         run(['ffmpeg', '-loglevel', 'error', '-y', '-i', wav, '-af',
              f'volume={gain:.3f}dB,aresample={SR * 4},alimiter=limit={db(ceil_db):.4f}:attack=2:release=80:level=0:latency=1,'
              f'aresample={SR}', '-c:a', 'pcm_f32le', lim])
-        m = ebur128(lim)
+        run(['ffmpeg', '-loglevel', 'error', '-y', '-i', lim, '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', out_m4a])
+        m = ebur128(out_m4a)
+        if m['TP'] > -1.1:  # el AAC rebasa el techo: se baja y se repite
+            ceil_db -= 0.4
+            continue
         if abs(m['I'] - target) < 0.1:
             break
         gain += target - m['I']
-    run(['ffmpeg', '-loglevel', 'error', '-y', '-i', lim, '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', out_m4a])
-    return ebur128(out_m4a)
+    return m
 
 
 def build(version: str, src: np.ndarray, stems: str | None, tmp: str) -> None:
@@ -638,15 +581,15 @@ def build(version: str, src: np.ndarray, stems: str | None, tmp: str) -> None:
     t = np.arange(len(mix)) / SR
     mix *= np.clip((dur - t) / 0.25, 0, 1)[:, None]
     out = os.path.join(ROOT, 'public', 'audio', f'mix-{version}.m4a')
-    m = master(mix, out, tmp)
+    m = master(mix, out, tmp, target=LUFS[version])
     print(f'[{version}] {out}: I={m["I"]} LUFS, LRA={m["LRA"]} LU, pico real={m["TP"]} dBTP')
     if stems:
         os.makedirs(stems, exist_ok=True)
         save(os.path.join(stems, f'music-{version}.wav'), mus)
         save(os.path.join(stems, f'sfx-{version}.wav'), fx)
         with open(os.path.join(stems, f'cues-{version}.json'), 'w') as fh:
-            json.dump(dict(cues=C, hit1=P['hit1'], hit2=P['hit2'], silences=P['silences'], close=P['close'],
-                           t_url=P['t_url'], t_sig=P['t_sig'], dur=dur, bar=P['bar']), fh, ensure_ascii=False, indent=1)
+            json.dump(dict(cues=C, hit_isla=P['hit_isla'], click=P['click'], silences=P['silences'],
+                           t_sig=P['t_sig'], dur=dur, beat=BEAT_S), fh, ensure_ascii=False, indent=1)
 
 
 def main() -> None:
