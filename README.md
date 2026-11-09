@@ -4,15 +4,19 @@ Vídeo promocional (estilo keynote) de los once temas de Omarchy de thealejandro
 plugin [omarchy-island](https://github.com/thealejandro/omarchy-island), hecho con
 [Remotion](https://www.remotion.dev) (React → MP4, render determinista).
 
-Solo usa capturas reales: nada se graba de la pantalla al renderizar.
+Usa capturas y dos clips reales grabados en el escritorio (cambio de tema en vivo y la isla
+abriéndose); al renderizar no se graba nada.
 
 ## Salidas
 
+Cada vídeo se renderiza en español (`es`) y en inglés (`en`).
+
 | Archivo | Formato | Duración |
 | --- | --- | --- |
-| `out/omarchy-promo.mp4` | 1920×1080, 60 fps, H.264 yuv420p CRF 18, faststart, AAC | ~88,6 s |
-| `out/omarchy-promo-vertical.mp4` | 1080×1920, 60 fps, mismo códec | ~45,1 s |
-| `out/poster.jpg` | 1920×1080 | — |
+| `out/omarchy-promo-{es,en}.mp4` | 1920×1080, 60 fps, H.264 yuv420p CRF 18, faststart, AAC, −16 LUFS | 60,0 s |
+| `out/omarchy-reel-{es,en}.mp4` | 1080×1920 (Reels), 60 fps, mismo códec, −14 LUFS | 28,8 s |
+| `out/poster-{es,en}.jpg` | 1920×1080 | — |
+| `out/cover-{es,en}.jpg` | 1080×1920, portada del reel (lo importante cabe en el recorte 3:4) | — |
 
 ## Uso
 
@@ -20,70 +24,79 @@ Solo usa capturas reales: nada se graba de la pantalla al renderizar.
 npm install
 npm run assets     # copia capturas, variantes, fondos e isla a public/ (solo lee archivos)
 npm run studio     # vista previa interactiva en el navegador
-npm run build      # renderiza los dos vídeos y el póster
-# o por separado: npm run render | npm run render:vertical | npm run poster
+npm run build      # los cuatro vídeos, pósteres y portadas
+# o por separado: npm run render:h:es | render:h:en | render:v:es | render:v:en | poster
 ```
 
-Vista previa rápida a media resolución:
+Vista previa rápida a resolución reducida:
 
 ```bash
-npx remotion render Promo out/preview.mp4 --scale=0.5
+npx remotion render Reel-es out/preview.mp4 --scale=0.4
 ```
 
 ## Estructura
 
 ```
 src/
-  Root.tsx            composiciones: Promo, PromoVertical, Poster
-  Promo.tsx           lista de escenas del vídeo horizontal (duraciones en segundos)
-  PromoVertical.tsx   lista de escenas del vertical (mismas escenas, maquetación vertical)
+  Root.tsx            composiciones: Promo-{es,en}, Reel-{es,en}, Poster-{es,en}, Cover-{es,en}
+  timeline.json       única fuente de los tiempos: escenas en pulsos (100 BPM, 1 pulso = 36 fotogramas)
+                      y transición hacia la siguiente; la lee también scripts/make-audio.py
+  Timeline.tsx        monta la línea de tiempo con TransitionSeries (cortes secos, slide o «cover»)
+  Promo.tsx           qué componente va en cada escena (Promo y Reel)
+  i18n.tsx            textos en pantalla en español e inglés
   lib.tsx             datos de temas, fuentes, titulares palabra a palabra, Monitor, ZoomImg…
-  clips.ts            clips en vivo opcionales
+  blur.tsx            desenfoque de movimiento (CameraMotionBlur) solo en los tramos de movimiento
+  clips.ts            clips en vivo y el segundo exacto de cada acción
   music.ts            pistas de audio (horizontal y vertical)
-  scenes/             Intro, OnceTemas, Families (carrusel + Obsidiana), Details
-                      (esquinas, paleta, barra, claro/oscuro), Island, Close
+  scenes/             Hook (desfile de temas), OnceTemas, Live (tema en vivo e isla en vivo),
+                      Families (carruseles + Obsidiana), Details (esquinas, paleta, barra,
+                      claro/oscuro), Island, Close
 public/
   shots/ extras/ backgrounds/ island/   material real (npm run assets)
+  clips/              clips grabados en vivo (scripts/capture-clips.sh)
   fonts/              Inter y JetBrains Mono (OFL), empaquetadas: render sin red
   marca/logotipo.svg  logotipo de thealejandro (copia de ~/Streaming/marca; no se modifica)
   audio/              sonido final: música + efectos (mix-h.m4a, mix-v.m4a; scripts/make-audio.py)
-  clips/              aquí van los clips grabados en vivo
 ```
 
-Escenas (horizontal): «Omarchy, a tu manera.» → «Once temas.» (montaje + rejilla que se
-reordena por familia) → «Inspirados en macOS.» → «Inspirados en Windows.» → «Y uno propio.»
-→ esquinas y bordes con degradado (dolly) → paleta (los colores salen de la captura y
-cambian de tema) → barra opaca / cristal / transparente → claro u oscuro (barrido) →
-«Y una isla.» (vistazo, se abre desde el reloj, páginas, agenda, hora mundial, clima,
-cualquier borde, colores del tema) → comando de instalación, thealejandro.dev/omarchy y firma
-con el logotipo («Hecho por thealejandro»).
+Montaje: no hay fundidos a negro. Cada escena empieza en un pulso de la música; los cambios
+son cortes secos en el golpe o transiciones cortas en las que el objeto continúa (la rejilla
+sale del tema que cerró el gancho, el carrusel desliza, la escena siguiente cubre a la anterior).
+
+Escenas (horizontal, 60 s): desfile de los once temas a sangre desde el fotograma 0 con
+«Omarchy, a tu manera.» → «Once temas.» (la rejilla se reordena por familias) → «Cambia de tema
+en vivo.» (clip real, zoom de cámara en cada cambio) → «Inspirados en macOS.» → «Inspirados en
+Windows.» → «Y uno propio.» → esquinas y bordes → paleta → barra → claro u oscuro → «Y una isla.»
+→ vistazo → «Se abre desde el reloj.» (clip real: la cámara sigue el cursor, anillo en el clic)
+→ cualquier borde → colores del tema → cierre de ~5 s con una sola llamada a la acción
+(thealejandro.dev/omarchy) y la firma.
+
+Reel (28,8 s): gancho → en vivo → macOS → Windows → propio → la isla en vivo → colores →
+cierre con «Enlace en el perfil». Todo el texto queda en la zona segura de Reels
+(x 65–1015, y 269–1248); las imágenes van a sangre.
 
 ## Clips en vivo
 
-La composición tiene dos huecos preparados para clips grabados (no incluidos):
+`scripts/capture-clips.sh` graba los dos clips en el escritorio 9 sin datos personales
+(Silencio activo, sin la página Mundo ni la ubicación del clima) y restaura el estado al
+terminar. Deja `public/clips/<clip>.mp4` y un `.json` con el segundo de cada acción según el
+registro de la grabación.
 
-| Hueco | Archivo sugerido | Qué sustituye |
+| Clip | Uso | Marcas (`src/clips.ts`) |
 | --- | --- | --- |
-| `islandOpen` | `public/clips/island-open.mp4` | la escena «Se abre desde el reloj» (capturas fijas) |
-| `themeSwitch` | `public/clips/theme-switch.mp4` | se inserta tras «Toma los colores de tu tema» |
+| `theme-switch.mp4` | «Cambia de tema en vivo.» | segundos en los que el cambio ya se ve |
+| `island-open.mp4` | «Se abre desde el reloj.» (recortado a 5,8 s) | clic en el reloj |
 
-1. Graba el clip (16:9, idealmente 1920×1080 a 60 fps; se recorta con `object-fit: cover`).
-2. Cópialo a `public/clips/`.
-3. En `src/clips.ts` descomenta/rellena su entrada:
-   ```ts
-   islandOpen: {src: 'clips/island-open.mp4', start: 1.5, duration: 6, caption: 'Se abre desde el reloj.'},
-   ```
-   `start` y `duration` son segundos del clip; la duración total del vídeo se recalcula sola.
-4. `npm run build`.
-
-El clip se muestra dentro del mismo marco de monitor, sin audio.
+Las marcas de `src/clips.ts` están medidas sobre el vídeo (no sobre el registro) y deciden en
+qué fotograma empieza cada tramo: así el cambio de tema y el clic caen justo en un pulso. Si
+falta un clip, la escena usa capturas fijas.
 
 ## Sonido
 
 ### Música
 
-Suena «Limit 70», de Kevin MacLeod (electrónica tranquila a 102,65 BPM, piano eléctrico y
-sintetizadores), arreglada para el montaje:
+Suena «Limit 70», de Kevin MacLeod (electrónica tranquila, piano eléctrico y sintetizadores),
+llevada de 102,65 a 100 BPM para que un pulso dure exactamente 36 fotogramas:
 
 > «Limit 70» Kevin MacLeod (incompetech.com)
 > Licensed under Creative Commons: By Attribution 4.0 License
@@ -91,21 +104,16 @@ sintetizadores), arreglada para el montaje:
 >
 > Pista: <https://incompetech.filmmusic.io/song/5710-limit-70>
 
-El arreglo es minimalista y respira con la imagen; no suena igual todo el rato:
+Arreglo (los tiempos salen de `src/timeline.json`):
 
-- **Intro**: solo la capa suave (piano eléctrico), casi en silencio, con un paso bajo que se va
-  abriendo. Se corta en seco un pulso antes de «Once temas.» y vuelve con el tema completo.
-- **Carruseles**: tema completo; en «Inspirados en Windows» el filtro se va cerrando.
-- **«Y uno propio.»**: se queda en las teclas del puente (−7 dB, filtradas); en las esquinas
-  vuelve la percusión ligera y el filtro se abre hasta que entra el tema en la paleta.
-- **Claro u oscuro**: agudos un poco más brillantes en el claro; al pasar a oscuro, paso bajo.
-- **Silencio** de dos pulsos antes de «Y una isla.», con un soplido inverso casi inaudible, y
-  regreso con golpe. Al abrirse la isla la música se hunde (paso bajo a 850 Hz) y se reabre.
-- **Cierre**: otra vez solo teclas; al aparecer la URL entra un remate de dos pulsos que acaba en
-  seco sobre la firma, con un acorde final de Fa# que se apaga en la sala.
-
-Cada sección se estira con rubberband (±4 % como mucho) para que los golpes caigan en su
-fotograma; los cambios armónicos respetan la progresión del original (4 compases en Fa# y 4 en Re#m).
+- **Gancho**: el tema completo arranca en el fotograma 0 con un golpe grave; un tick suave en
+  cada tema del desfile.
+- **Carruseles y en vivo**: tema completo; un tick en cada cambio de tema que se ve.
+- **«Y uno propio.»**: solo las teclas del puente; en las esquinas, percusión ligera.
+- **Paleta, barra, claro u oscuro**: vuelve el tema completo.
+- **Un pulso de silencio** con un solo crescendo antes de la isla y vuelta con golpe. En el clic
+  sobre el reloj la música cae a un paso bajo y se reabre mientras la isla se abre.
+- **Cierre**: teclas y, en el pulso 4, un acorde final de Fa# que se apaga en la sala.
 
 ### Efectos
 
@@ -114,16 +122,15 @@ ni voces sintéticas.
 
 | Efecto | Cómo está hecho | Dónde |
 | --- | --- | --- |
-| Tick de interfaz | ruido filtrado de 2 ms + dos modos resonantes amortiguados + «toc» grave, saturación suave, sala corta; tono y nivel varían en cada uno | cambios de tema (montaje, carruseles, paleta, barra, claro/oscuro), tarjetas, pestañas de la isla, URL |
-| Soplido | ruido rosa estéreo con paso banda que sube y baja y paneo en movimiento | entrada del monitor, rejilla, reordenado, carruseles, «Y uno propio», zoom |
-| Golpe grave | barrido 68→38 Hz con envolvente real, transitorio de ruido grave, saturación asimétrica | «Once temas.», «Y una isla.», firma |
+| Tick de interfaz | ruido filtrado de 2 ms + dos modos resonantes amortiguados + «toc» grave, saturación suave, sala corta | desfile, cambios de tema, carruseles, paleta, barra, clic en el reloj, pestañas |
+| Golpe grave | barrido 68→38 Hz con envolvente real, transitorio de ruido grave, saturación asimétrica | fotograma 0, vuelta tras el silencio, firma |
 | Tono de la isla | campana suave (parciales 1, 2, 3, 4,07, 5,4), Fa#5 + Do#6, sala larga | se asoma y se abre la isla, firma |
-| Soplido inverso | ruido con paso alto ascendente que acaba en seco | silencio antes de «Y una isla.» |
+| Crescendo | ruido con paso alto ascendente que acaba en seco | el pulso de silencio antes de la isla |
+| Soplido | ruido rosa con paso banda que sube y baja | solo al reordenarse la rejilla |
 
-Los efectos van siempre por debajo de la música (ticks y soplidos entre −20 y −40 dB por debajo
-en RMS; los golpes graves casi solo aportan sub). La tabla completa de eventos (fotograma, tipo y
-motivo) está en `cues()` dentro del script; si cambias duraciones o tiempos internos de escena,
-actualiza `SCENES_*` y `cues()`.
+La tabla de eventos (fotograma, tipo y motivo) está en `cues()`; si cambias tiempos internos de
+una escena, actualízala allí. Las duraciones de escena no hace falta tocarlas: se leen de
+`src/timeline.json`.
 
 ### Regenerar el audio
 
@@ -135,18 +142,19 @@ python3 scripts/make-audio.py "Limit 70.mp3"                 # public/audio/mix-
 python3 scripts/make-audio.py "Limit 70.mp3" --stems /tmp/st  # además: música, efectos y eventos por separado
 ```
 
-El resultado es determinista. La mezcla sale a −16 LUFS integrados con pico real ≤ −1 dBTP
-(limitador con sobremuestreo ×4) y ya incluye fundidos y nivel, así que `src/music.ts` usa
-volumen 1. Sin sonido: `MUSIC_HORIZONTAL = null` y `MUSIC_VERTICAL = null`.
+El resultado es determinista. Máster: horizontal a −16 LUFS y reel a −14 LUFS integrados, pico
+real ≤ −1 dBTP (limitador con sobremuestreo ×4, medido sobre el AAC final). Ya incluye fundidos
+y nivel, así que `src/music.ts` usa volumen 1. Sin sonido: `MUSIC_HORIZONTAL = null` y
+`MUSIC_VERTICAL = null`.
 
-**Si publicas el vídeo, incluye el crédito de la música en la descripción.**
+**Si publicas el vídeo, incluye el crédito de la música en la descripción** (también sale en
+letra pequeña en el cierre).
 
 ## Notas
 
-- Los textos están en español; nombres y descripciones salen de
-  `portfolio/src/data/omarchy-themes.json` (copiado a `src/themes.json`).
+- Textos en español e inglés (`src/i18n.tsx`); los nombres de los temas no se traducen. Nombres
+  y descripciones salen de `portfolio/src/data/omarchy-themes.json` (copiado a `src/themes.json`).
 - «Contraste AA»: todos los colores de cada paleta tienen ≥ 4,5:1 sobre su fondo (comprobado).
-- La isla aún no muestra notificaciones: el vídeo no las menciona.
 - Logotipo: según `~/Streaming/diseno/MARCA.md` §0 (sin espejar, sin brillos, sombras ni
   degradados; solo fundido y escala al entrar).
 - Sin relación con Apple ni Microsoft.
