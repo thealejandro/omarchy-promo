@@ -1,0 +1,132 @@
+// Textos en pantalla por idioma. Cada composición recibe `lang` y lo reparte por contexto,
+// así las escenas solo llaman a useT(). Los nombres de los temas no se traducen.
+import React, {createContext, useContext} from 'react';
+
+export type Lang = 'es' | 'en';
+export const LANGS: Lang[] = ['es', 'en'];
+
+const ES = {
+  hookA: 'Omarchy,',
+  hookB: 'a tu manera.',
+  hookSub: 'Once temas y una isla.',
+  once: 'Once temas.',
+  famMac: 'Inspirados en macOS',
+  famWin: 'Inspirados en Windows',
+  famOwn: 'Diseño propio',
+  live: 'Cambia de tema en vivo.',
+  liveV: 'Cambia de tema\nen vivo.',
+  mac: 'Inspirados en macOS.',
+  macV: 'Inspirados\nen macOS.',
+  win: 'Inspirados en Windows.',
+  winV: 'Inspirados\nen Windows.',
+  own: 'Y uno propio.',
+  ownDesc: 'Negro obsidiana, verde jade y un toque ámbar.',
+  corners: 'Esquinas suaves.',
+  borders: 'Bordes con degradado.',
+  palette: 'Cada tema, su paleta.',
+  paletteAA: ['Todos sus colores, con contraste ', ' sobre el fondo.'] as [string, string],
+  bar: 'La barra, a tu gusto.',
+  barModes: ['Opaca', 'Cristal', 'Transparente'],
+  barNote: (name: string) => `${name}, con su fondo de pantalla detrás.`,
+  lightDark: 'Claro u oscuro.',
+  dark: 'Oscuro',
+  light: 'Claro',
+  island: 'Y una isla.',
+  islandSub: 'Sale de la barra, justo donde está el reloj.',
+  peek: 'Se asoma cuando cambia la canción.',
+  peekSub: 'También con el temporizador, la batería y, si quieres, el volumen y el brillo.',
+  open: 'Se abre desde el reloj.',
+  openNote: 'Un clic y tienes la agenda.',
+  openFeat: ['Agenda con recordatorios.', 'Hora mundial.', 'Clima con pronóstico.'],
+  tabs: ['Inicio', 'Calendario', 'Mundo', 'Ajustes'],
+  edges: 'En cualquier borde de la barra.',
+  edgesSub: 'Arriba, abajo, a la izquierda o a la derecha.',
+  colors: 'Toma los colores de tu tema.',
+  colorsV: 'Toma los colores\nde tu tema.',
+  inBio: 'Enlace\nen el perfil',
+  madeBy: 'Hecho por thealejandro',
+  legal: 'Sin relación con Apple ni Microsoft.',
+  music: 'Música: «Limit 70», Kevin MacLeod (incompetech.com), CC BY 4.0',
+  inspiration: {
+    cupertino: 'macOS · oscuro',
+    'cupertino-light': 'macOS · claro',
+    graphite: 'macOS Graphite · monocromo',
+    'big-sur': 'macOS Big Sur · oscuro',
+    ventura: 'macOS Ventura · oscuro',
+    tahoe: 'macOS Tahoe · claro',
+    fluent: 'Windows 11 · oscuro',
+    'fluent-light': 'Windows 11 · claro',
+    aero: 'Windows Vista / 7 · claro',
+    'aero-night': 'Windows Vista / 7 · oscuro',
+    obsidiana: 'Diseño propio · oscuro',
+  } as Record<string, string>,
+};
+
+export type Strings = typeof ES;
+
+const EN: Strings = {
+  hookA: 'Omarchy,',
+  hookB: 'your way.',
+  hookSub: 'Eleven themes and an island.',
+  once: 'Eleven themes.',
+  famMac: 'Inspired by macOS',
+  famWin: 'Inspired by Windows',
+  famOwn: 'Original design',
+  live: 'Switch themes live.',
+  liveV: 'Switch themes\nlive.',
+  mac: 'Inspired by macOS.',
+  macV: 'Inspired\nby macOS.',
+  win: 'Inspired by Windows.',
+  winV: 'Inspired\nby Windows.',
+  own: 'And one of my own.',
+  ownDesc: 'Obsidian black, jade green and a touch of amber.',
+  corners: 'Soft corners.',
+  borders: 'Gradient borders.',
+  palette: 'Every theme, its own palette.',
+  paletteAA: ['Every color passes ', ' contrast on the background.'],
+  bar: 'A bar that fits.',
+  barModes: ['Opaque', 'Glass', 'Clear'],
+  barNote: (name: string) => `${name}, with its wallpaper behind.`,
+  lightDark: 'Light or dark.',
+  dark: 'Dark',
+  light: 'Light',
+  island: 'And an island.',
+  islandSub: 'It grows out of the bar, right where the clock is.',
+  peek: 'It peeks out when the song changes.',
+  peekSub: 'Also for timers, battery and, if you like, volume and brightness.',
+  open: 'Click the clock to open it.',
+  openNote: 'One click and your calendar is there.',
+  openFeat: ['Calendar with reminders.', 'World clock.', 'Weather with forecast.'],
+  tabs: ['Home', 'Calendar', 'World', 'Settings'],
+  edges: 'On any edge of the bar.',
+  edgesSub: 'Top, bottom, left or right.',
+  colors: 'It wears your theme’s colors.',
+  colorsV: 'It wears your\ntheme’s colors.',
+  inBio: 'Link in bio',
+  madeBy: 'Made by thealejandro',
+  legal: 'Not affiliated with Apple or Microsoft.',
+  music: 'Music: “Limit 70”, Kevin MacLeod (incompetech.com), CC BY 4.0',
+  inspiration: {
+    cupertino: 'macOS · dark',
+    'cupertino-light': 'macOS · light',
+    graphite: 'macOS Graphite · monochrome',
+    'big-sur': 'macOS Big Sur · dark',
+    ventura: 'macOS Ventura · dark',
+    tahoe: 'macOS Tahoe · light',
+    fluent: 'Windows 11 · dark',
+    'fluent-light': 'Windows 11 · light',
+    aero: 'Windows Vista / 7 · light',
+    'aero-night': 'Windows Vista / 7 · dark',
+    obsidiana: 'Original design · dark',
+  },
+};
+
+const TABLE: Record<Lang, Strings> = {es: ES, en: EN};
+const LangContext = createContext<Lang>('es');
+
+export const LangProvider: React.FC<{lang: Lang; children: React.ReactNode}> = ({lang, children}) => (
+  <LangContext.Provider value={lang}>{children}</LangContext.Provider>
+);
+
+export const useLang = () => useContext(LangContext);
+export const useT = () => TABLE[useContext(LangContext)];

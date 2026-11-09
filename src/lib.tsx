@@ -33,21 +33,6 @@ export const MACOS = ['cupertino', 'cupertino-light', 'graphite', 'big-sur', 've
 export const WINDOWS = ['fluent', 'fluent-light', 'aero', 'aero-night'];
 export const ALL = [...MACOS, ...WINDOWS, 'obsidiana'];
 
-// Subtítulo corto para cada tema (inspiración en español).
-export const INSPIRATION: Record<string, string> = {
-  cupertino: 'macOS · oscuro',
-  'cupertino-light': 'macOS · claro',
-  graphite: 'macOS Graphite · monocromo',
-  'big-sur': 'macOS Big Sur · oscuro',
-  ventura: 'macOS Ventura · oscuro',
-  tahoe: 'macOS Tahoe · claro',
-  fluent: 'Windows 11 · oscuro',
-  'fluent-light': 'Windows 11 · claro',
-  aero: 'Windows Vista / 7 · claro',
-  'aero-night': 'Windows Vista / 7 · oscuro',
-  obsidiana: 'Diseño propio · oscuro',
-};
-
 export const shot = (slug: string) => staticFile(`shots/${slug}.png`);
 export const extra = (slug: string, name: string) => staticFile(`extras/${slug}/${name}.webp`);
 export const wallpaper = (slug: string) => staticFile(`backgrounds/${slug}.jpg`);
@@ -88,6 +73,11 @@ Promise.all([
 // ---------------------------------------------------------------------------
 export const FPS = 60;
 export const s = (sec: number) => Math.round(sec * FPS);
+/** Un pulso de la música (100 BPM) en fotogramas: los cortes y cambios caen en múltiplos de B. */
+export const B = 36;
+
+/** Interpola una escala de cámara de forma perceptual (en logaritmo): el zoom se siente uniforme. */
+export const logLerp = (a: number, b: number, t: number) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * t);
 export const EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 export const EASE_IO = Easing.bezier(0.65, 0, 0.35, 1);
 export const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -101,14 +91,6 @@ export const useSpr = (delay: number, dur = 45) => {
 
 export const ramp = (frame: number, a: number, b: number, ease = EASE_IO) =>
   interpolate(frame, [a, b], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: ease});
-
-/** Opacidad de entrada/salida de escena. */
-export const useSceneFade = (durationInFrames: number, fadeIn = 18, fadeOut = 18) => {
-  const frame = useCurrentFrame();
-  const a = fadeIn > 0 ? ramp(frame, 0, fadeIn, EASE) : 1;
-  const b = fadeOut > 0 ? 1 - ramp(frame, durationInFrames - fadeOut, durationInFrames, EASE) : 1;
-  return Math.min(a, b);
-};
 
 export const useIsVertical = () => {
   const {width, height} = useVideoConfig();

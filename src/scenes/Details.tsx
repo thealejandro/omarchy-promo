@@ -12,13 +12,14 @@ import {
   ZoomImg,
   extra,
   monitorHeight,
+  B,
   ramp,
   shot,
   theme,
   useIsVertical,
-  useSceneFade,
   useSpr,
 } from '../lib';
+import {useT} from '../i18n';
 
 // ---------------------------------------------------------------------------
 // Esquinas y bordes: dolly hasta la unión de ventanas
@@ -27,26 +28,26 @@ export const Corners: React.FC<{dur: number}> = ({dur}) => {
   const frame = useCurrentFrame();
   const {height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
   const mw = V ? 1000 : 1320;
   const mh = monitorHeight(mw);
   const top = V ? H * 0.5 - mh / 2 : 70;
-  const swap = 190; // pasa de Big Sur a Ventura
-  const xf = ramp(frame, swap, swap + 24, EASE);
+  const t = useT();
+  const swap = 4 * B; // pasa de Big Sur a Ventura en el pulso 4
+  const xf = ramp(frame, swap - 4, swap + 14, EASE);
   const keysA = [
     {f: 0, s: 1.0, x: 0.5, y: 0.5},
-    {f: 40, s: 1.0, x: 0.5, y: 0.5},
-    {f: 170, s: 3.4, x: 0.751, y: 0.516},
-    {f: 230, s: 3.6, x: 0.751, y: 0.516},
+    {f: 20, s: 1.0, x: 0.5, y: 0.5},
+    {f: 124, s: 3.4, x: 0.751, y: 0.516},
+    {f: 170, s: 3.6, x: 0.751, y: 0.516},
   ];
   const keysB = [
-    {f: swap - 10, s: 3.6, x: 0.503, y: 0.51},
-    {f: 290, s: 3.2, x: 0.503, y: 0.51},
-    {f: 360, s: 1.05, x: 0.5, y: 0.5},
+    {f: swap - 8, s: 3.6, x: 0.503, y: 0.51},
+    {f: swap + 60, s: 3.2, x: 0.503, y: 0.51},
+    {f: 8 * B + 10, s: 1.05, x: 0.5, y: 0.5},
   ];
   const textTop = V ? top + mh + 110 : top + mh + 62;
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint={xf < 0.5 ? '#ff7eb6' : '#ff8a3d'} intensity={0.28} />
       <div style={{position: 'absolute', left: '50%', top, marginLeft: -mw / 2}}>
         <Monitor w={mw} reflection={false} glow={xf < 0.5 ? '#bf5af2' : '#ff8a3d'}>
@@ -61,20 +62,14 @@ export const Corners: React.FC<{dur: number}> = ({dur}) => {
         </Monitor>
       </div>
       <div style={{position: 'absolute', top: V ? 260 : textTop, left: 0, right: 0}}>
-        {V ? (
-          <>
-            <Words text="Esquinas suaves." start={50} size={88} weight={600} exitAt={swap - 20} />
-          </>
-        ) : (
-          <Words text="Esquinas suaves." start={50} size={72} weight={600} exitAt={swap - 20} />
-        )}
+        <Words text={t.corners} start={20} size={V ? 88 : 80} weight={650} exitAt={swap - 18} />
       </div>
       <div style={{position: 'absolute', top: V ? 260 : textTop, left: 0, right: 0}}>
         <Words
-          text="Bordes con degradado."
-          start={swap + 4}
-          size={V ? 88 : 72}
-          weight={600}
+          text={t.borders}
+          start={swap + 2}
+          size={V ? 88 : 80}
+          weight={650}
           gradient="linear-gradient(90deg, #ffb340 0%, #ff8a3d 45%, #ff5e3a 100%)"
         />
       </div>
@@ -92,10 +87,10 @@ export const Palette: React.FC<{dur: number}> = ({dur}) => {
   const frame = useCurrentFrame();
   const {width: W, height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
-  const T_FLY = 50;
-  const steps = [0, 150, 235, 320];
-  const TR = 26;
+  const t = useT();
+  const T_FLY = 24;
+  const steps = [0, 3 * B, 5 * B, 7 * B]; // cada cambio de tema cae en un pulso
+  const TR = 20;
   // índice continuo de tema
   let k = 0;
   for (let i = 1; i < steps.length; i++) k += ramp(frame, steps[i], steps[i] + TR, EASE_IO);
@@ -118,10 +113,10 @@ export const Palette: React.FC<{dur: number}> = ({dur}) => {
   const aaTop = V ? rowsY[1] + sw + 110 : rowsY[0] + sw + 82;
 
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint={colorOf('accent')} intensity={0.25} y="40%" />
       <div style={{position: 'absolute', top: V ? 250 : 60, left: 0, right: 0}}>
-        <Words text={V ? 'Cada tema,\nsu paleta.' : 'Cada tema, su paleta.'} start={0} size={V ? 96 : 76} weight={600} />
+        <Words text={t.palette} start={0} size={V ? 96 : 84} weight={650} />
       </div>
       <div style={{position: 'absolute', left: '50%', top: monTop, marginLeft: -mw / 2}}>
         <Monitor w={mw} reflection={false} glow={colorOf('accent')}>
@@ -217,20 +212,12 @@ export const Palette: React.FC<{dur: number}> = ({dur}) => {
           fontSize: V ? 36 : 30,
           fontWeight: 400,
           color: C.dim,
-          opacity: ramp(frame, 110, 150, EASE),
+          opacity: ramp(frame, 70, 100, EASE),
         }}
       >
-        {V ? (
-          <>
-            Todos sus colores, con contraste
-            <br />
-            <span style={{color: C.text, fontWeight: 600}}>AA</span> sobre el fondo.
-          </>
-        ) : (
-          <>
-            Todos sus colores, con contraste <span style={{color: C.text, fontWeight: 600}}>AA</span> sobre el fondo.
-          </>
-        )}
+        {t.paletteAA[0]}
+        <span style={{color: C.text, fontWeight: 600}}>AA</span>
+        {t.paletteAA[1]}
       </div>
     </AbsoluteFill>
   );
@@ -245,25 +232,21 @@ const rgbToHex = (c: string) => {
 // ---------------------------------------------------------------------------
 // Barra: opaca, cristal, transparente
 // ---------------------------------------------------------------------------
-const BAR_MODES = [
-  {key: 'bar-opaque', label: 'Opaca'},
-  {key: 'bar-glassy', label: 'Cristal'},
-  {key: 'bar-clear', label: 'Transparente'},
-];
+const BAR_MODES = [{key: 'bar-opaque'}, {key: 'bar-glassy'}, {key: 'bar-clear'}];
 
 export const Bars: React.FC<{dur: number; slug?: string}> = ({dur, slug = 'aero-night'}) => {
   const frame = useCurrentFrame();
   const {width: W} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
-  const T = [0, 120, 215];
-  const WIPE = 40;
+  const t = useT();
+  const T = [0, 2 * B - 10, 4 * B - 10]; // el barrido acaba poco después del pulso
+  const WIPE = 30;
   const cw = V ? 1000 : 1720;
   const ch = Math.round((cw * 300) / 1600);
-  const cardIn = useSpr(20, 50);
+  const cardIn = useSpr(4, 40);
   const top = V ? 760 : 330;
   // dolly hacia la barra
-  const z = interpolate(frame, [40, dur], [1.0, V ? 2.1 : 1.45], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: EASE_IO});
+  const z = interpolate(frame, [20, dur], [1.0, V ? 2.1 : 1.45], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: EASE_IO});
   const fx = V ? 0.5 : 0.5;
   const fy = 0.08;
   const wipes = T.map((t, i) => (i === 0 ? 1 : ramp(frame, t, t + WIPE, EASE_IO)));
@@ -272,10 +255,10 @@ export const Bars: React.FC<{dur: number; slug?: string}> = ({dur, slug = 'aero-
   const segW = V ? 250 : 230;
   const segTop = top + ch + (V ? 90 : 80);
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint="#4fc3f7" intensity={0.22} />
       <div style={{position: 'absolute', top: V ? 300 : 90, left: 0, right: 0}}>
-        <Words text={V ? 'La barra,\na tu gusto.' : 'La barra, a tu gusto.'} start={0} size={V ? 96 : 84} weight={600} />
+        <Words text={t.bar} start={0} size={V ? 96 : 88} weight={650} />
       </div>
       <div
         style={{
@@ -336,7 +319,7 @@ export const Bars: React.FC<{dur: number; slug?: string}> = ({dur, slug = 'aero-
           borderRadius: 999,
           background: 'rgba(255,255,255,0.08)',
           boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.10)',
-          opacity: ramp(frame, 40, 70, EASE),
+          opacity: ramp(frame, 10, 34, EASE),
         }}
       >
         <div
@@ -370,7 +353,7 @@ export const Bars: React.FC<{dur: number; slug?: string}> = ({dur, slug = 'aero-
                 color: interpolateColors(on, [0, 1], ['#d1d1d6', '#000000']),
               }}
             >
-              {m.label}
+              {t.barModes[i]}
             </div>
           );
         })}
@@ -385,10 +368,10 @@ export const Bars: React.FC<{dur: number; slug?: string}> = ({dur, slug = 'aero-
           fontFamily: FONT,
           fontSize: V ? 32 : 28,
           color: C.dim,
-          opacity: ramp(frame, 80, 110, EASE),
+          opacity: ramp(frame, 40, 64, EASE),
         }}
       >
-        {theme(slug).name}, con su fondo de pantalla detrás.
+        {t.barNote(theme(slug).name)}
       </div>
     </AbsoluteFill>
   );
@@ -406,25 +389,25 @@ export const LightDark: React.FC<{dur: number}> = ({dur}) => {
   const frame = useCurrentFrame();
   const {height: H} = useVideoConfig();
   const V = useIsVertical();
-  const fade = useSceneFade(dur, 14, 20);
   const mw = V ? 1000 : 1300;
   const mh = monitorHeight(mw);
   const top = V ? H * 0.5 - mh / 2 + 40 : 190;
-  const SW = Math.round(dur * 0.52);
-  const pairX = ramp(frame, SW - 12, SW + 12, EASE);
+  const t = useT();
+  const SW = 3 * B; // cambia de pareja en el pulso 3
+  const pairX = ramp(frame, SW - 6, SW + 8, EASE);
   // posición del barrido (fracción visible del claro desde la derecha)
   const pos = interpolate(
     frame,
-    [0, 40, 100, 150, SW, SW + 40, SW + 100, dur],
+    [0, 12, 60, 96, SW, SW + 20, SW + 70, dur],
     [1.0, 1.0, 0.5, 0.62, 0.62, 0.62, 0.25, 0.5],
     {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: EASE_IO},
   );
-  const monIn = useSpr(6, 50);
+  const monIn = useSpr(-14, 36); // ya casi dentro en el corte
   return (
-    <AbsoluteFill style={{opacity: fade}}>
+    <AbsoluteFill>
       <Backdrop tint="#8e8e93" intensity={0.18} />
       <div style={{position: 'absolute', top: V ? 300 : 60, left: 0, right: 0}}>
-        <Words text={V ? 'Claro\nu oscuro.' : 'Claro u oscuro.'} start={0} size={V ? 110 : 84} weight={600} />
+        <Words text={t.lightDark} start={0} size={V ? 110 : 88} weight={650} />
       </div>
       <div
         style={{
@@ -487,8 +470,8 @@ export const LightDark: React.FC<{dur: number}> = ({dur}) => {
               >
                 ‹›
               </div>
-              <Pill text="Oscuro" left={24} bottom={24} />
-              <Pill text="Claro" right={24} bottom={24} light opacity={pos < 0.9 ? 1 : 0} />
+              <Pill text={t.dark} left={24} bottom={24} />
+              <Pill text={t.light} right={24} bottom={24} light opacity={pos < 0.9 ? 1 : 0} />
             </>
           )}
         </Monitor>
@@ -509,7 +492,7 @@ export const LightDark: React.FC<{dur: number}> = ({dur}) => {
               fontSize: V ? 40 : 32,
               fontWeight: 500,
               color: C.text,
-              opacity: o * ramp(frame, 50, 80),
+              opacity: o * ramp(frame, 20, 44),
             }}
           >
             {theme(dark).name} <span style={{color: C.faint}}>·</span> {theme(light).name}

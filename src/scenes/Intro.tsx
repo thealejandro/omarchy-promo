@@ -1,6 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
-import {C, Center, FadeText, Words, useIsVertical, useSceneFade} from '../lib';
+import {AbsoluteFill, useCurrentFrame} from 'remotion';
 
 const ORBS = [
   {c: '#0a84ff', x: 30, y: 40, r: 38, sp: 0.0021},
@@ -39,45 +38,3 @@ export const Aurora: React.FC<{opacity?: number}> = ({opacity = 0.32}) => {
 };
 
 export const GRAD = 'linear-gradient(95deg, #5ac8fa 0%, #7d7aff 38%, #bf5af2 65%, #ff7eb6 100%)';
-
-export const Intro: React.FC<{dur: number}> = ({dur}) => {
-  const frame = useCurrentFrame();
-  const V = useIsVertical();
-  const fade = useSceneFade(dur, 0, 24);
-  const glow = interpolate(frame, [0, 90], [0, 1], {extrapolateRight: 'clamp'});
-  const exit = dur - 60;
-  return (
-    <AbsoluteFill style={{background: C.bg, opacity: fade}}>
-      <Aurora opacity={0.26 * glow} />
-      <Center style={{flexDirection: 'column', gap: V ? 50 : 40}}>
-        <div style={{display: 'flex', flexDirection: V ? 'column' : 'row', alignItems: 'center'}}>
-          <Words text="Omarchy," start={18} size={V ? 150 : 168} weight={600} exitAt={exit} />
-          <Words
-            text={V ? 'a tu\nmanera.' : 'a tu manera.'}
-            start={44}
-            stagger={8}
-            size={V ? 150 : 168}
-            weight={300}
-            gradient={GRAD}
-            exitAt={exit + 4}
-          />
-        </div>
-        <FadeText
-          start={110}
-          exitAt={exit}
-          style={{fontSize: V ? 40 : 40, fontWeight: 400, color: C.dim, letterSpacing: '-0.01em', textAlign: 'center'}}
-        >
-          {V ? (
-            <>
-              Once temas y una isla
-              <br />
-              para tu escritorio.
-            </>
-          ) : (
-            'Once temas y una isla para tu escritorio.'
-          )}
-        </FadeText>
-      </Center>
-    </AbsoluteFill>
-  );
-};

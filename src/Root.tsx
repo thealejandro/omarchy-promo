@@ -1,21 +1,22 @@
 import React from 'react';
 import {Composition, Still} from 'remotion';
+import {LANGS} from './i18n';
 import {FPS} from './lib';
-import {Promo, horizontalScenes, totalFrames} from './Promo';
-import {PromoVertical, verticalScenes} from './PromoVertical';
-import {Poster} from './Poster';
+import {Promo, Reel} from './Promo';
+import {Cover, Poster} from './Poster';
+import {totalFrames} from './Timeline';
 
+// Una composición por formato e idioma: Promo-es, Promo-en (1920x1080, ~60 s),
+// Reel-es, Reel-en (1080x1920, ~29 s), y sus portadas.
 export const Root: React.FC = () => (
   <>
-    <Composition id="Promo" component={Promo} width={1920} height={1080} fps={FPS} durationInFrames={totalFrames(horizontalScenes())} />
-    <Composition
-      id="PromoVertical"
-      component={PromoVertical}
-      width={1080}
-      height={1920}
-      fps={FPS}
-      durationInFrames={totalFrames(verticalScenes())}
-    />
-    <Still id="Poster" component={Poster} width={1920} height={1080} />
+    {LANGS.map((lang) => (
+      <React.Fragment key={lang}>
+        <Composition id={`Promo-${lang}`} component={Promo} width={1920} height={1080} fps={FPS} durationInFrames={totalFrames('h')} defaultProps={{lang}} />
+        <Composition id={`Reel-${lang}`} component={Reel} width={1080} height={1920} fps={FPS} durationInFrames={totalFrames('v')} defaultProps={{lang}} />
+        <Still id={`Poster-${lang}`} component={Poster} width={1920} height={1080} defaultProps={{lang}} />
+        <Still id={`Cover-${lang}`} component={Cover} width={1080} height={1920} defaultProps={{lang}} />
+      </React.Fragment>
+    ))}
   </>
 );
