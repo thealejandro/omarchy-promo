@@ -420,7 +420,7 @@ export const IslandColors: React.FC<{dur: number}> = ({dur}) => {
   const chh = islandCropH(cw);
   const gap = V ? 50 : 46;
   const step = cw + gap;
-  const cy = V ? H * 0.52 : 600;
+  const cy = V ? H * 0.45 : 600; // en vertical, el nombre del tema queda por encima de y 1248 (zona segura)
   // posición continua: avanza por la cinta
   const pos = interpolate(frame, [0, dur], [1.2, V ? 6.2 : 7.6], {easing: EASE_IO});
   const cur = Math.round(pos);
